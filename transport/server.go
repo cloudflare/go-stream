@@ -1,37 +1,30 @@
 package transport
 
 import (
+	"log"
+	"net"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/stream/sink"
 	"stash.cloudflare.com/go-stream/stream/source"
-	"log"
-	"net"
 	"sync"
 	"time"
 )
 
 type Server struct {
-	outch             chan []byte
-	addr              string
-	hwm               int
-	hardCloseListener chan bool
+	*stream.HardStopChannelCloser
+	*stream.BaseOut
+	addr string
+	hwm  int
 }
 
-func DefaultServer() (Server, chan []byte) {
+func DefaultServer() *Server {
 	return NewServer(":4558", DEFAULT_HWM)
 }
 
-func NewServer(addr string, highWaterMark int) (Server, chan []byte) {
-	outputch := make(chan []byte, stream.CHAN_SLACK)
-	hcl := make(chan bool)
-	zmqsrc := Server{outputch, addr, highWaterMark, hcl}
+func NewServer(addr string, highWaterMark int) *Server {
+	zmqsrc := Server{stream.NewHardStopChannelCloser(), stream.NewBaseOut(stream.CHAN_SLACK), addr, highWaterMark}
 
-	return zmqsrc, outputch
-}
-
-func (src Server) Stop() error {
-	close(src.hardCloseListener)
-	return nil
+	return &zmqsrc
 }
 
 func hardCloseListener(hcn chan bool, sfc chan bool, listener net.Listener) {
@@ -46,7 +39,7 @@ func hardCloseListener(hcn chan bool, sfc chan bool, listener net.Listener) {
 }
 
 func (src Server) Run() error {
-	defer close(src.outch)
+	defer close(src.Out())
 
 	ln, err := net.Listen("tcp", src.addr)
 	if err != nil {
@@ -63,7 +56,7 @@ func (src Server) Run() error {
 	wg_sub.Add(1)
 	go func() {
 		defer wg_sub.Done()
-		hardCloseListener(src.hardCloseListener, scl, ln)
+		hardCloseListener(src.StopNotifier, scl, ln)
 	}()
 
 	for {
@@ -71,7 +64,7 @@ func (src Server) Run() error {
 		if err != nil {
 			hardClose := false
 			select {
-			case _, ok := <-src.hardCloseListener:
+			case _, ok := <-src.StopNotifier:
 				if !ok {
 					hardClose = true
 				}
@@ -152,7 +145,7 @@ func (src Server) handleConnection(conn net.Conn) {
 					} else {
 						timer = time.After(100 * time.Millisecond)
 					}
-					src.outch <- payload
+					src.Out() <- payload
 				} else if command == CLOSE {
 					if lastGotAck > lastSentAck {
 						sendAck(sndChData, lastGotAck)
@@ -174,7 +167,7 @@ func (src Server) handleConnection(conn net.Conn) {
 			sendAck(sndChData, lastGotAck)
 			lastSentAck = lastGotAck
 			timer = nil
-		case <-src.hardCloseListener:
+		case <-src.StopNotifier:
 			return
 		}
 

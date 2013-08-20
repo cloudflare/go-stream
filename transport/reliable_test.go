@@ -16,9 +16,13 @@ func TestSimpleTransfer(t *testing.T) {
 
 	log.SetFlags(log.Llongfile)
 
-	datach := make(chan []byte, 100)
-	c := DefaultClient("127.0.0.1", datach)
-	s, rcvch := DefaultServer()
+	datach := make(chan stream.Object, 100)
+	c := DefaultClient("127.0.0.1")
+	c.SetIn(datach)
+	s := DefaultServer()
+	rcvch := make(chan stream.Object, 100)
+	s.SetOut(rcvch)
+
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 
@@ -42,7 +46,7 @@ func TestSimpleTransfer(t *testing.T) {
 	log.Println("Waiting to rcv")
 	for i := 0; i < 10; i++ {
 		//log.Println("Waiting to rcv", i)
-		if res := <-rcvch; string(res) != fmt.Sprintf("test %d", i) {
+		if res := <-rcvch; string(res.([]byte)) != fmt.Sprintf("test %d", i) {
 			t.Fail()
 		}
 	}
@@ -56,9 +60,17 @@ func TestServerLateStart(t *testing.T) {
 
 	log.SetFlags(log.Llongfile)
 
-	datach := make(chan []byte, 100)
-	c := DefaultClient("127.0.0.1", datach)
-	s, rcvch := DefaultServer()
+	/*	datach := make(chan []byte, 100)
+		c := DefaultClient("127.0.0.1", datach)
+		s, rcvch := DefaultServer()*/
+
+	datach := make(chan stream.Object, 100)
+	c := DefaultClient("127.0.0.1")
+	c.SetIn(datach)
+	s := DefaultServer()
+	rcvch := make(chan stream.Object, 100)
+	s.SetOut(rcvch)
+
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 
@@ -79,7 +91,7 @@ func TestServerLateStart(t *testing.T) {
 	}()
 
 	for i := 0; i < 10; i++ {
-		if res := <-rcvch; string(res) != fmt.Sprintf("test %d", i) {
+		if res := <-rcvch; string(res.([]byte)) != fmt.Sprintf("test %d", i) {
 			t.Fail()
 		}
 	}
@@ -102,18 +114,27 @@ func TestServerFailed(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg1 := &sync.WaitGroup{}
 
-	datach := make(chan []byte, 100)
-	snk := DefaultClient("127.0.0.1", datach)
+	//datach := make(chan []byte, 100)
+	//snk := DefaultClient("127.0.0.1", datach)
+
+	datach := make(chan stream.Object, 100)
+	snk := DefaultClient("127.0.0.1")
+	snk.SetIn(datach)
+
 	StartOp(wg, snk)
 
 	for i := 0; i < 10; i++ {
 		datach <- []byte(fmt.Sprintf("test should be processed %d", i))
 	}
 
-	src, rcvch := DefaultServer()
+	src := DefaultServer()
+	rcvch := make(chan stream.Object, 100)
+	src.SetOut(rcvch)
+
+	//src, rcvch := DefaultServer()
 	StartOp(wg1, src)
 	for i := 0; i < 10; i++ {
-		if res := <-rcvch; string(res) != fmt.Sprintf("test should be processed %d", i) {
+		if res := <-rcvch; string(res.([]byte)) != fmt.Sprintf("test should be processed %d", i) {
 			t.Fatal("Wrong message received")
 		}
 	}
@@ -146,7 +167,9 @@ func TestServerFailed(t *testing.T) {
 		t.Fatal("Error Len should be 10 but is ", val+len(datach))
 	}
 
-	src, rcvch = DefaultServer()
+	src = DefaultServer()
+	rcvch = make(chan stream.Object, 100)
+	src.SetOut(rcvch)
 	StartOp(wg, src)
 
 	log.Println("Making sure no old stuff is lingering")
@@ -167,12 +190,12 @@ func TestServerFailed(t *testing.T) {
 		t.Error("Wrong out len", len(rcvch))
 		for len(rcvch) > 0 {
 			v := <-rcvch
-			t.Error("Value: ", string(v))
+			t.Error("Value: ", string(v.([]byte)))
 		}
 	}
 
 	for i := 0; i < 10; i++ {
-		if res := <-rcvch; string(res) != fmt.Sprintf("test after failure %d", i) {
+		if res := <-rcvch; string(res.([]byte)) != fmt.Sprintf("test after failure %d", i) {
 			t.Fatal("Wrong message received")
 		}
 	}
@@ -188,9 +211,16 @@ func TestSendBig(t *testing.T) {
 
 	log.SetFlags(log.Llongfile)
 
-	datach := make(chan []byte, 100)
-	c := DefaultClient("127.0.0.1", datach)
-	s, rcvch := DefaultServer()
+	/*	datach := make(chan []byte, 100)
+		c := DefaultClient("127.0.0.1", datach)
+		s, rcvch := DefaultServer()*/
+	datach := make(chan stream.Object, 100)
+	c := DefaultClient("127.0.0.1")
+	c.SetIn(datach)
+	s := DefaultServer()
+	rcvch := make(chan stream.Object, 100)
+	s.SetOut(rcvch)
+
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 
@@ -208,7 +238,7 @@ func TestSendBig(t *testing.T) {
 
 	res := <-rcvch
 
-	if !bytes.Equal(res, payload) {
+	if !bytes.Equal(res.([]byte), payload) {
 		t.Fatal("Sent and rcv not equal")
 	}
 

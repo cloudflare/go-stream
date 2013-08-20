@@ -17,32 +17,32 @@ const RETRIES = 3
 const ACK_TIMEOUT_MS = 1000
 
 type Client struct {
-	inch chan []byte
+	*stream.HardStopChannelCloser
+	*stream.BaseIn
 	addr string
 	//id string
-	hwm               int
-	buf               util.SequentialBuffer
-	hardCloseListener chan bool
-	retries           int
-	running           bool
-	notifier          stream.ProcessedNotifier
+	hwm      int
+	buf      util.SequentialBuffer
+	retries  int
+	running  bool
+	notifier stream.ProcessedNotifier
 }
 
-func DefaultClient(ip string, inch chan []byte) *Client {
-	return NewClient(fmt.Sprintf("%s:4558", ip), DEFAULT_HWM, inch)
+func DefaultClient(ip string) *Client {
+	return NewClient(fmt.Sprintf("%s:4558", ip), DEFAULT_HWM)
 }
 
-func NewClient(addr string, hwm int, inch chan []byte) *Client {
-	hcl := make(chan bool, 0)
+func NewClient(addr string, hwm int) *Client {
 	buf := util.NewSequentialBufferChanImpl(hwm + 1)
-	return &Client{inch, addr, hwm, buf, hcl, 0, false, nil}
+	return &Client{stream.NewHardStopChannelCloser(), stream.NewBaseIn(stream.CHAN_SLACK), addr, hwm, buf, 0, false, nil}
 }
 
-func (src *Client) SetNotifier(n stream.ProcessedNotifier) {
+func (src *Client) SetNotifier(n stream.ProcessedNotifier) *Client {
 	if n.Blocking() == true {
 		log.Fatal("Can't use a blocking Notifier")
 	}
 	src.notifier = n
+	return src
 }
 
 func (src *Client) processAck(seq int) (progress bool) {
@@ -93,11 +93,6 @@ func (src Client) Len() (int, error) {
 		return -1, errors.New("Still Running")
 	}
 	return src.buf.Len(), nil
-}
-
-func (src *Client) Stop() error {
-	close(src.hardCloseListener)
-	return nil
 }
 
 func (src *Client) resetAckTimer() (timer <-chan time.Time) {
@@ -166,7 +161,7 @@ func (src *Client) connect() error {
 	//defer log.Println("Exiting client loop")
 
 	for {
-		upstreamCh := src.inch
+		upstreamCh := src.In()
 		if !src.buf.CanAdd() || closing {
 			//disable upstream listening
 			upstreamCh = nil
@@ -181,12 +176,13 @@ func (src *Client) connect() error {
 				//make sure everything was sent
 				closing = true
 			} else {
-				seq, err := src.buf.Add(msg)
+				bytes := msg.([]byte)
+				seq, err := src.buf.Add(bytes)
 				if err != nil {
 					log.Fatal("Error adding item to buffer", err)
 					return err
 				}
-				sendData(sndChData, msg, seq)
+				sendData(sndChData, bytes, seq)
 				if timer == nil {
 					timer = src.resetAckTimer()
 				}
@@ -211,7 +207,7 @@ func (src *Client) connect() error {
 			return errors.New("Connection to Server was Broken in Send Direction")
 		case <-timer:
 			return errors.New("Time Out Waiting For Ack")
-		case <-src.hardCloseListener:
+		case <-src.StopNotifier:
 			return nil
 		}
 	}
