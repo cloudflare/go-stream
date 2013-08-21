@@ -116,22 +116,6 @@ func (src *Client) connect() error {
 	wg_sub := &sync.WaitGroup{}
 	defer wg_sub.Wait()
 
-	sndChData := make(chan stream.Object, src.hwm)
-	sndChCloseNotifier := make(chan bool)
-	defer close(sndChData)
-	sender := sink.NewMultiPartWriterSink(conn)
-	sender.SetIn(sndChData)
-	wg_sub.Add(1)
-	go func() {
-		defer wg_sub.Done()
-		defer close(sndChCloseNotifier)
-		err := sender.Run()
-		if err != nil {
-			log.Println("Error in client sender", err)
-		}
-	}()
-	defer sender.Stop()
-
 	rcvChData := make(chan stream.Object, 10)
 	receiver := source.NewIOReaderSourceLengthDelim(conn)
 	receiver.SetOut(rcvChData)
@@ -145,7 +129,24 @@ func (src *Client) connect() error {
 			log.Println("Error in client reciever", err)
 		}
 	}()
-	defer receiver.Stop()
+	//receiver will be closed by the sender after it is done sending. receiver closed via a hard stop.
+
+	sndChData := make(chan stream.Object, src.hwm)
+	sndChCloseNotifier := make(chan bool)
+	defer close(sndChData)
+	sender := sink.NewMultiPartWriterSink(conn)
+	sender.SetIn(sndChData)
+	wg_sub.Add(1)
+	go func() {
+		defer receiver.Stop() //close receiver
+		defer wg_sub.Done()
+		defer close(sndChCloseNotifier)
+		err := sender.Run()
+		if err != nil {
+			log.Println("Error in client sender: ", err)
+		}
+	}()
+	//sender closed by closing the sndChData channel or by a hard stop
 
 	if src.buf.Len() > 0 {
 		leftover := src.buf.Reset()
@@ -167,6 +168,7 @@ func (src *Client) connect() error {
 			upstreamCh = nil
 		}
 		if closing && src.buf.Len() == 0 {
+			sendClose(sndChData, 100)
 			return nil
 		}
 		select {
@@ -187,8 +189,8 @@ func (src *Client) connect() error {
 					timer = src.resetAckTimer()
 				}
 			}
-		case obj := <-rcvChData:
-			log.Println("in Rcv")
+		case obj, ok := <-rcvChData:
+			log.Println("in Rcv: ", ok)
 			command, seq, _, err := parseMsg(obj.([]byte))
 			if err != nil {
 				log.Fatal(err)
@@ -208,6 +210,7 @@ func (src *Client) connect() error {
 		case <-timer:
 			return errors.New("Time Out Waiting For Ack")
 		case <-src.StopNotifier:
+			sender.Stop()
 			return nil
 		}
 	}

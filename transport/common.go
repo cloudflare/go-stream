@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	//	"errors"
-	"stash.cloudflare.com/go-stream/stream"
 	"log"
+	"stash.cloudflare.com/go-stream/stream"
 
 	//"time"
 )
@@ -27,6 +27,11 @@ func sendData(sndCh chan<- stream.Object, data []byte, seq int) {
 func sendAck(sndCh chan<- stream.Object, seq int) {
 	log.Println("Sending back ack ", seq)
 	sendMsg(sndCh, ACK, seq, []byte{})
+}
+
+func sendClose(sndCh chan<- stream.Object, seq int) {
+	log.Println("Sending Close ", seq)
+	sendMsg(sndCh, CLOSE, seq, []byte{})
 }
 
 func sendMsg(sndCh chan<- stream.Object, command ZmqCommand, seq int, payload []byte) {

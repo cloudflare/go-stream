@@ -246,3 +246,42 @@ func TestSendBig(t *testing.T) {
 	s.Stop()
 	c.Stop()
 }
+
+func TestSoftClose(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	wg1 := &sync.WaitGroup{}
+
+	//datach := make(chan []byte, 100)
+	//snk := DefaultClient("127.0.0.1", datach)
+
+	datach := make(chan stream.Object, 100)
+	c := DefaultClient("127.0.0.1")
+	c.SetIn(datach)
+
+	StartOp(wg, c)
+
+	for i := 0; i < 10; i++ {
+		datach <- []byte(fmt.Sprintf("test should be processed %d", i))
+	}
+
+	s := DefaultServer()
+	rcvch := make(chan stream.Object, 100)
+	s.SetOut(rcvch)
+	s.EnableSoftClose = true
+
+	//src, rcvch := DefaultServer()
+	StartOp(wg1, s)
+	for i := 0; i < 10; i++ {
+		if res := <-rcvch; string(res.([]byte)) != fmt.Sprintf("test should be processed %d", i) {
+			t.Fatal("Wrong message received")
+		}
+	}
+
+	close(datach)
+
+	log.Println("Waitiong For Client To Exit")
+	wg.Wait()
+	log.Println("Waitiong For Server To Exit")
+	wg1.Wait()
+}

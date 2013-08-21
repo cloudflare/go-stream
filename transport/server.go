@@ -13,8 +13,9 @@ import (
 type Server struct {
 	*stream.HardStopChannelCloser
 	*stream.BaseOut
-	addr string
-	hwm  int
+	addr            string
+	hwm             int
+	EnableSoftClose bool
 }
 
 func DefaultServer() *Server {
@@ -22,7 +23,7 @@ func DefaultServer() *Server {
 }
 
 func NewServer(addr string, highWaterMark int) *Server {
-	zmqsrc := Server{stream.NewHardStopChannelCloser(), stream.NewBaseOut(stream.CHAN_SLACK), addr, highWaterMark}
+	zmqsrc := Server{stream.NewHardStopChannelCloser(), stream.NewBaseOut(stream.CHAN_SLACK), addr, highWaterMark, false}
 
 	return &zmqsrc
 }
@@ -38,6 +39,11 @@ func hardCloseListener(hcn chan bool, sfc chan bool, listener net.Listener) {
 	}
 }
 
+func softCloserRunner(sfc chan bool, wg *sync.WaitGroup) {
+	wg.Wait()
+	close(sfc)
+}
+
 func (src Server) Run() error {
 	defer close(src.Out())
 
@@ -50,8 +56,10 @@ func (src Server) Run() error {
 	wg_sub := &sync.WaitGroup{}
 	defer wg_sub.Wait()
 
+	//If soft close is enabled, server will exit after last connection exits.
 	scl := make(chan bool)
-	defer close(scl)
+	wg_scl := &sync.WaitGroup{}
+	first_connection := true
 
 	wg_sub.Add(1)
 	go func() {
@@ -63,21 +71,39 @@ func (src Server) Run() error {
 		conn, err := ln.Accept()
 		if err != nil {
 			hardClose := false
+			softClose := false
 			select {
 			case _, ok := <-src.StopNotifier:
 				if !ok {
 					hardClose = true
 				}
+			case _, ok := <-scl:
+				if !ok {
+					softClose = true
+				}
 			default:
 			}
-			if !hardClose {
+			if !hardClose && !softClose {
 				log.Println("Accept Error", err)
 			}
 			return nil
 		}
 		wg_sub.Add(1)
+		wg_scl.Add(1)
+		if first_connection {
+			first_connection = false
+			//close scl after all connections exit (need to make sure wg_scl > 1 before launching. Launched once)
+			if src.EnableSoftClose {
+				wg_sub.Add(1)
+				go func() {
+					defer wg_sub.Done()
+					softCloserRunner(scl, wg_scl)
+				}()
+			}
+		}
 		go func() {
 			defer wg_sub.Done()
+			defer wg_scl.Done()
 			defer conn.Close() //handle connection will close conn because of reader and writer. But just as good coding practice
 			src.handleConnection(conn)
 		}()
@@ -129,11 +155,13 @@ func (src Server) handleConnection(conn net.Conn) {
 	for {
 		select {
 		case obj, ok := <-rcvChData:
-			command, seq, payload, err := parseMsg(obj.([]byte))
 
 			if !ok {
 				//send last ack back??
+				log.Println("Receive Channel Closed Without Close Message")
+				return
 			}
+			command, seq, payload, err := parseMsg(obj.([]byte))
 
 			if err == nil {
 				if command == DATA {
@@ -150,6 +178,7 @@ func (src Server) handleConnection(conn net.Conn) {
 					if lastGotAck > lastSentAck {
 						sendAck(sndChData, lastGotAck)
 					}
+					log.Println("Server got close")
 					return
 				} else {
 					log.Fatal("Server Got Unknown Command")
@@ -158,6 +187,9 @@ func (src Server) handleConnection(conn net.Conn) {
 				log.Fatal("Server could not parse packet", err)
 			}
 		case <-rcvChCloseNotifier:
+			if len(rcvChData) > 0 {
+				continue //drain channel before exiting
+			}
 			log.Println("Client asked for a close on recieve- should not happen")
 			return
 		case <-sndChCloseNotifier:
