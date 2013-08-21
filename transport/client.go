@@ -208,7 +208,7 @@ func (src *Client) connect() error {
 		case <-sndChCloseNotifier:
 			return errors.New("Connection to Server was Broken in Send Direction")
 		case <-timer:
-			return errors.New("Time Out Waiting For Ack")
+			return errors.New(fmt.Sprintf("Time Out Waiting For Ack, %d", len(rcvChData)))
 		case <-src.StopNotifier:
 			sender.Stop()
 			return nil

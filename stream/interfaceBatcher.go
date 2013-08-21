@@ -75,6 +75,6 @@ func (c *InterfaceContainer) Add(obj Object) {
 
 func NewInterfaceBatchOp(pn ProcessedNotifier) *BatcherOperator {
 	container := NewInterfaceContainer()
-	op := NewBatchOperator(container, pn)
+	op := NewBatchOperator("InterfaceBatchOp", container, pn)
 	return op
 }

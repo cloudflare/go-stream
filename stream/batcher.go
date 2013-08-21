@@ -16,6 +16,7 @@ type BatcherOperator struct {
 	*HardStopChannelCloser
 	*BaseIn
 	*BaseOut
+	name                  string
 	container             BatchContainer
 	MaxOutstanding        uint
 	processedDownstream   ProcessedNotifier
@@ -26,8 +27,8 @@ type BatcherOperator struct {
 	total_flushes         uint
 }
 
-func NewBatchOperator(container BatchContainer, processedDownstream ProcessedNotifier) *BatcherOperator {
-	return &BatcherOperator{NewHardStopChannelCloser(), NewBaseIn(CHAN_SLACK), NewBaseOut(CHAN_SLACK), container, 1,
+func NewBatchOperator(name string, container BatchContainer, processedDownstream ProcessedNotifier) *BatcherOperator {
+	return &BatcherOperator{NewHardStopChannelCloser(), NewBaseIn(CHAN_SLACK), NewBaseOut(CHAN_SLACK), name, container, 1,
 		processedDownstream, time.Second, time.Second, time.Second, 0, 0}
 }
 
@@ -114,7 +115,7 @@ func (op *BatcherOperator) Run() error {
 				if op.container.HasItems() {
 					log.Fatal("Last flush did not empty container, some stuff will never be sent")
 				}
-				log.Println("Batch Operator flushed", op.total_flushes)
+				log.Println("Batch Operator ", op.name, " flushed ", op.total_flushes)
 				return nil
 			}
 		//case BE

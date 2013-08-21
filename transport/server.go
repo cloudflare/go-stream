@@ -28,6 +28,11 @@ func NewServer(addr string, highWaterMark int) *Server {
 	return &zmqsrc
 }
 
+func (s *Server) SetEnableSoftClose(flag bool) *Server {
+	s.EnableSoftClose = flag
+	return s
+}
+
 func hardCloseListener(hcn chan bool, sfc chan bool, listener net.Listener) {
 	select {
 	case <-hcn:

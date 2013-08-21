@@ -39,6 +39,6 @@ func NewPgBatchOperator(parse func(stream.Object) (Dimensions, Aggregates),
 	batchGran := time.Second
 	outGran := time.Hour
 	cont := &TimePartitionedCubeContainer{NewTimePartitionedCube(batchGran), parse, batchGran, outGran}
-	return stream.NewBatchOperator(cont, downstreamProcessed)
+	return stream.NewBatchOperator("PgBatchOp", cont, downstreamProcessed)
 
 }

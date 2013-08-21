@@ -12,6 +12,7 @@ type Chain struct {
 	//	closenotify chan bool
 	//	closeerror  chan error
 	sentstop bool
+	Name     string
 }
 
 func NewChain() *Chain {
@@ -64,14 +65,14 @@ func (c *Chain) Stop() error {
 }
 
 func (c *Chain) Wait() error {
-	log.Println("Waiting for closenotify")
+	log.Println("Waiting for closenotify", c.Name)
 	<-c.runner.CloseNotifier()
 	select {
 	case err := <-c.runner.ErrorChannel():
-		log.Println("Hard Close in Chain", err)
+		log.Println("Hard Close in Chain", c.Name, err)
 		c.Stop()
 	default:
-		log.Println("Soft Close in Chain")
+		log.Println("Soft Close in Chain", c.Name)
 		c.SoftStop()
 	}
 	log.Println("Waiting for wg")
