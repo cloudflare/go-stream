@@ -1,10 +1,10 @@
 package sink
 
 import (
-	"stash.cloudflare.com/go-stream/stream"
 	"encoding/binary"
 	"io"
 	"log"
+	"stash.cloudflare.com/go-stream/stream"
 )
 
 type valueWriter interface {

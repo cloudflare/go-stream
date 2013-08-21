@@ -1,36 +1,56 @@
 package stream
 
+type RunningCount struct {
+	cnts []int
+}
+
+func NewRunningCount(sz int) *RunningCount {
+	return &RunningCount{make([]int, 0, sz)}
+}
+
+func (rc *RunningCount) GetAverage() int {
+	sz := len(rc.cnts)
+	if sz == 0 {
+		return 0
+	}
+	sum := 0
+	for _, i := range rc.cnts {
+		sum += i
+	}
+	return sum / sz
+}
+
+func (rc *RunningCount) GetAverageMin(min int) int {
+	avg := rc.GetAverage()
+	if avg < min {
+		return min
+	}
+	return avg
+}
+
+func (rc *RunningCount) Add(i int) {
+	if len(rc.cnts) < cap(rc.cnts) {
+		rc.cnts = append(rc.cnts, i)
+	} else {
+		rc.cnts = append(rc.cnts[1:], i)
+	}
+}
+
 type InterfaceContainer struct {
 	store        []interface{}
-	runningCount []int
+	runningCount *RunningCount
 }
 
 func NewInterfaceContainer() *InterfaceContainer {
-	return &InterfaceContainer{make([]interface{}, 0, 2), make([]int, 0, 5)}
-}
-
-func (c *InterfaceContainer) getAverageCount() int {
-	sum := 0
-	for i := range c.runningCount {
-		sum += i
-	}
-	avg := sum / len(c.runningCount)
-	if avg < 2 {
-		avg = 2
-	}
-	return avg
+	return &InterfaceContainer{make([]interface{}, 0, 2), NewRunningCount(5)}
 }
 
 func (c *InterfaceContainer) Flush(out chan<- Object) bool {
 	if len(c.store) > 0 {
 		out <- c.store
 		cnt := len(c.store)
-		if len(c.runningCount) < 5 {
-			c.runningCount = append(c.runningCount, cnt)
-		} else {
-			c.runningCount = append(c.runningCount[1:], cnt)
-		}
-		c.store = make([]interface{}, 0, c.getAverageCount())
+		c.runningCount.Add(cnt)
+		c.store = make([]interface{}, 0, c.runningCount.GetAverageMin(2))
 		return true
 	}
 	return false

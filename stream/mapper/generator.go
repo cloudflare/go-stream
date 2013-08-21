@@ -39,6 +39,10 @@ func (w *WorkerFactoryGenerator) GetWorker() Worker {
 	if len(ret) != 1 {
 		log.Fatal("Cannot return more than one function in WorkerFactory")
 	}
+	direct, ok := ret[0].Elem().Interface().(func(obj stream.Object, out chan<- stream.Object) (n int))
+	if ok {
+		return &EfficientWorker{callback: direct}
+	}
 	return &CallbackWorker{callback: ret[0].Elem()}
 }
 

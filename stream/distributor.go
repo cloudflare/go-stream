@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-type distributorChildOp interface {
+type DistributorChildOp interface {
 	Operator
 	In
 }
@@ -16,12 +16,12 @@ type DistributeOperator struct {
 	*HardStopChannelCloser
 	*BaseIn
 	mapper        func(Object) DistribKey
-	branchCreator func(DistribKey) distributorChildOp
+	branchCreator func(DistribKey) DistributorChildOp
 	outputs       map[DistribKey]chan<- Object
 	runner        *Runner
 }
 
-func NewDistributor(mapp func(Object) DistribKey, creator func(DistribKey) distributorChildOp) *DistributeOperator {
+func NewDistributor(mapp func(Object) DistribKey, creator func(DistribKey) DistributorChildOp) *DistributeOperator {
 	return &DistributeOperator{NewHardStopChannelCloser(), NewBaseIn(CHAN_SLACK), mapp, creator, make(map[DistribKey]chan<- Object), NewRunner()}
 }
 

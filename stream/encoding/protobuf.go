@@ -36,12 +36,14 @@ func NewProtobufDecodeOp(gen interface{}) stream.Operator { //if outch is chan X
 
 func NewProtobufEncodeOp() stream.Operator {
 	generator := func() interface{} {
-		fn := func(in proto.Message) [][]byte {
+		fn := func(obj stream.Object, outch chan<- stream.Object) int {
+			in := obj.(proto.Message)
 			out, err := proto.Marshal(in)
 			if err != nil {
 				log.Printf("Error marshaling protobuf %v\t%#v", err, in)
 			}
-			return [][]byte{out}
+			outch <- out
+			return 1
 		}
 		return fn
 	}

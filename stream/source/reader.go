@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"encoding/binary"
 	//"errors"
-	"stash.cloudflare.com/go-stream/stream"
 	"io"
 	"log"
 	"math"
+	"stash.cloudflare.com/go-stream/stream"
 )
 
 type NextReader interface {
@@ -95,16 +95,16 @@ func NewNextReaderSourceMax(reader NextReader, max uint32) Sourcer {
 	hcc := stream.NewHardStopChannelCloser()
 	o := stream.NewBaseOut(stream.CHAN_SLACK)
 	nrs := NextReaderSource{hcc, o, reader, max}
-	return nrs
+	return &nrs
 }
 
-func (src NextReaderSource) Stop() error {
+func (src *NextReaderSource) Stop() error {
 	close(src.StopNotifier)
 	src.readnexter.Stop()
 	return nil
 }
 
-func (src NextReaderSource) Run() error {
+func (src *NextReaderSource) Run() error {
 	//This operator always stops the read nexter before exiting.
 	//But can't defer here since in the case of a hardstop readnexter.Stop() was already called
 
@@ -130,7 +130,7 @@ func (src NextReaderSource) Run() error {
 			src.Out() <- b
 		}
 		if eofReached || (count >= src.MaxItems) {
-			log.Println("Got eof")
+			//log.Println("Got eof")
 			src.readnexter.Stop()
 			return nil
 		}
