@@ -4,8 +4,20 @@ import (
 	"log"
 )
 
-/* A Chain implements the operator interface too! */
-type Chain struct {
+type Chain interface {
+	Operators() []Operator
+	Run() error
+	Stop() error
+	Add(o Operator) Chain
+	SetName(string) Chain
+
+	//async functions
+	Start() error
+	Wait() error
+}
+
+/* A SimpleChain implements the operator interface too! */
+type SimpleChain struct {
 	runner *Runner
 	//	Ops         []Operator
 	//	wg          *sync.WaitGroup
@@ -15,11 +27,20 @@ type Chain struct {
 	Name     string
 }
 
-func NewChain() *Chain {
-	return &Chain{runner: NewRunner()}
+func NewChain() *SimpleChain {
+	return &SimpleChain{runner: NewRunner()}
 }
 
-func (c *Chain) Add(o Operator) *Chain {
+func (c *SimpleChain) Operators() []Operator {
+	return c.runner.Operators()
+}
+
+func (c *SimpleChain) SetName(name string) Chain {
+	c.Name = name
+	return c
+}
+
+func (c *SimpleChain) Add(o Operator) Chain {
 	ops := c.runner.Operators()
 	if len(ops) > 0 {
 		log.Println("Setting input channel of", Name(o))
@@ -39,12 +60,12 @@ func (c *Chain) Add(o Operator) *Chain {
 	return c
 }
 
-func (c *Chain) Start() error {
+func (c *SimpleChain) Start() error {
 	c.runner.AsyncRunAll()
 	return nil
 }
 
-func (c *Chain) SoftStop() error {
+func (c *SimpleChain) SoftStop() error {
 	if !c.sentstop {
 		c.sentstop = true
 		log.Println("In soft close")
@@ -55,7 +76,7 @@ func (c *Chain) SoftStop() error {
 }
 
 /* A stop is a hard stop as per the Operator interface */
-func (c *Chain) Stop() error {
+func (c *SimpleChain) Stop() error {
 	if !c.sentstop {
 		c.sentstop = true
 		log.Println("In hard close")
@@ -64,46 +85,74 @@ func (c *Chain) Stop() error {
 	return nil
 }
 
-func (c *Chain) Wait() error {
+func (c *SimpleChain) Wait() error {
 	log.Println("Waiting for closenotify", c.Name)
 	<-c.runner.CloseNotifier()
 	select {
 	case err := <-c.runner.ErrorChannel():
-		log.Println("Hard Close in Chain", c.Name, err)
+		log.Println("Hard Close in SimpleChain", c.Name, err)
 		c.Stop()
 	default:
-		log.Println("Soft Close in Chain", c.Name)
+		log.Println("Soft Close in SimpleChain", c.Name)
 		c.SoftStop()
 	}
 	log.Println("Waiting for wg")
 	c.runner.WaitGroup().Wait()
-	log.Println("Exiting Chain")
+	log.Println("Exiting SimpleChain")
 
 	return nil
 }
 
 /* Operator compatibility */
-func (c *Chain) Run() error {
+func (c *SimpleChain) Run() error {
 	if err := c.Start(); err != nil {
 		return err
 	}
 	return c.Wait()
 }
 
+type OrderedChain struct {
+	*SimpleChain
+}
+
+func NewOrderedChain() *OrderedChain {
+	return &OrderedChain{NewChain()}
+}
+
+func (c *OrderedChain) Add(o Operator) Chain {
+	parallel, ok := o.(ParallelizableOperator)
+	if ok {
+		if !parallel.IsOrdered() {
+			parallel = parallel.MakeOrdered()
+			if !parallel.IsOrdered() {
+				log.Fatal("Couldn't make parallel operator ordered")
+			}
+		}
+		c.SimpleChain.Add(parallel)
+	} else {
+		c.SimpleChain.Add(o)
+	}
+	return c
+}
+
 type InChain struct {
-	*Chain
+	Chain
 }
 
 func NewInChain() *InChain {
 	return &InChain{NewChain()}
 }
 
+func NewOrderedInChain() *InChain {
+	return &InChain{NewOrderedChain()}
+}
+
 func (c *InChain) In() chan Object {
-	ops := c.runner.Operators()
+	ops := c.Operators()
 	return ops[0].(In).In()
 }
 
 func (c *InChain) SetIn(ch chan Object) {
-	ops := c.runner.Operators()
+	ops := c.Operators()
 	ops[0].(In).SetIn(ch)
 }

@@ -26,6 +26,13 @@ type Operator interface {
 	Stop() error
 }
 
+type ParallelizableOperator interface {
+	Operator
+	IsParallel() bool
+	IsOrdered() bool
+	MakeOrdered() ParallelizableOperator
+}
+
 type Out interface {
 	Out() chan Object
 	SetOut(c chan Object)

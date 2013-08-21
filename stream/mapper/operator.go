@@ -69,6 +69,23 @@ func (o *Op) Init() bool {
 	return w.Validate(o.In(), o.Typename)
 }
 
+func (o *Op) IsParallel() bool {
+	return o.Parallel
+}
+
+func (o *Op) IsOrdered() bool {
+	return false
+}
+
+func (o *Op) MakeOrdered() stream.ParallelizableOperator {
+	return NewOrderedOpWrapper(o)
+}
+
+func (o *Op) SetParallel(flag bool) *Op {
+	o.Parallel = flag
+	return o
+}
+
 func (o *Op) String() string {
 	return o.Typename
 }

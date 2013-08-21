@@ -9,18 +9,30 @@ import "log"
 func NewOrderedOp(proc interface{}, tn string) *OrderPreservingOp {
 	gen := CallbackGenerator{callback: proc}
 	base := stream.NewBaseInOutOp(stream.CHAN_SLACK)
-	mop := Op{base, &gen, tn, true}
-	op := OrderPreservingOp{Op: mop}
-	op.Init()
-	return &op
+	mop := &Op{base, &gen, tn, true}
+	return NewOrderedOpWrapper(mop)
+}
+
+func NewOrderedOpWrapper(op *Op) *OrderPreservingOp {
+	o := OrderPreservingOp{Op: op}
+	o.Init()
+	return &o
 }
 
 type OrderPreservingOp struct {
-	Op
+	*Op
 	results    []chan stream.Object //[]chan O
 	resultsNum []chan int
 	resultQ    chan int
 	lock       chan bool
+}
+
+func (o *OrderPreservingOp) IsOrdered() bool {
+	return true
+}
+
+func (o *OrderPreservingOp) MakeOrdered() stream.ParallelizableOperator {
+	panic("Already Ordered")
 }
 
 func (o *OrderPreservingOp) runWorker(worker Worker, workerid int) {
@@ -35,7 +47,6 @@ func (o *OrderPreservingOp) runWorker(worker Worker, workerid int) {
 				count := worker.Map(obj)
 				o.resultsNum[workerid] <- count
 			} else {
-
 				count := o.WorkerClose(worker)
 				if count > 0 {
 					o.resultQ <- workerid
@@ -113,9 +124,10 @@ func (o *OrderPreservingOp) Run() error {
 	combinerwg.Add(1)
 	go func() {
 		defer combinerwg.Done()
-		go o.Combiner()
+		o.Combiner()
 	}()
 	opwg.Wait()
+	//log.Println("Workers Returned Order Pres")
 	close(o.resultQ)
 	combinerwg.Wait()
 	o.Exit()
