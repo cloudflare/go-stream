@@ -1,9 +1,9 @@
 package timing
 
 import (
+	"log"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/stream/mapper"
-	"log"
 	"sync/atomic"
 	"time"
 )
@@ -67,14 +67,13 @@ func NewInterfaceTimingOp() (oper stream.Operator, count *uint32, duration *time
 	var dur time.Duration
 
 	var start_batch_time *time.Time
-	fn := func(msg stream.Object, out chan<- stream.Object) int {
+	fn := func(msg stream.Object, out mapper.Outputer) {
 		if start_batch_time == nil {
 			var now = time.Now()
 			start_batch_time = &now
 		}
 		atomic.AddUint32(counter, 1)
-		out <- msg
-		return 1
+		out.Out(1) <- msg
 	}
 
 	closefn := func() {

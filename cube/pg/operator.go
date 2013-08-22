@@ -28,14 +28,13 @@ func NewUpsertOp(dbconnect string, tableName string, cd cube.CubeDescriber) (str
 
 	ready := stream.NewNonBlockingProcessedNotifier(2)
 
-	f := func(input stream.Object, out chan<- stream.Object) int {
+	f := func(input stream.Object, out mapper.Outputer) {
 		in := input.(*cube.TimeRepartitionedCube)
 		visitor := func(part cube.Partition, c cube.Cuber) {
 			exec.UpsertCube(part, c)
 		}
 		in.VisitPartitions(visitor)
 		ready.Notify(1)
-		return 0
 	}
 
 	exit := func() {

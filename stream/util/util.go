@@ -4,8 +4,7 @@ import "stash.cloudflare.com/go-stream/stream/mapper"
 import "stash.cloudflare.com/go-stream/stream"
 
 func NewDropOp() *mapper.Op {
-	dropfn := func(input stream.Object, out chan<- stream.Object) int {
-		return 0
+	dropfn := func(input stream.Object, out mapper.Outputer) {
 	}
 
 	return mapper.NewOp(dropfn, "DropRop")

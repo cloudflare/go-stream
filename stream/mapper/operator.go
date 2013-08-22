@@ -45,7 +45,7 @@ func NewOpWorkerFinalItemsFactory(proc interface{}, tn string) *Op {
 }
 
 type Closer interface {
-	Close() int //happens on worker for soft close only
+	Close(out Outputer) //happens on worker for soft close only
 }
 
 type Stopper interface {
@@ -65,7 +65,6 @@ type Op struct {
 
 func (o *Op) Init() bool {
 	w := o.Gen.GetWorker()
-	w.Start(o.Out())
 	return w.Validate(o.In(), o.Typename)
 }
 
@@ -101,27 +100,26 @@ func (o *Op) WorkerStop(worker Worker) {
 	}
 }
 
-func (o *Op) WorkerClose(worker Worker) int {
+func (o *Op) WorkerClose(worker Worker, outputer Outputer) {
 	closer, ok := worker.(Closer)
 	if ok {
-		return closer.Close()
+		closer.Close(outputer)
 	}
 	exitor, ok := worker.(Exitor)
 	if ok {
 		exitor.Exit()
 	}
-	return 0
 }
 
 func (o *Op) runWorker(worker Worker, outCh chan stream.Object) {
-	worker.Start(outCh)
+	outputer := NewSimpleOutputer(outCh)
 	for {
 		select {
 		case obj, ok := <-o.In():
 			if ok {
-				worker.Map(obj)
+				worker.Map(obj, outputer)
 			} else {
-				o.WorkerClose(worker)
+				o.WorkerClose(worker, outputer)
 				return
 			}
 		case <-o.StopNotifier:

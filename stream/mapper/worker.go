@@ -6,50 +6,42 @@ import "log"
 import "stash.cloudflare.com/go-stream/stream"
 
 type Worker interface {
-	Start(outch chan stream.Object)
-	Map(input stream.Object) (n int)
+	Map(input stream.Object, out Outputer)
 	Validate(inCh chan stream.Object, typeName string) bool
 }
 
 type CallbackWorker struct {
-	outCh              chan stream.Object
 	callback           reflect.Value
 	closeCallback      func()
 	finalItemsCallback *reflect.Value
 	typename           string
 }
 
-func (w *CallbackWorker) Start(out chan stream.Object) {
-	w.outCh = out
-}
-
-func (w *CallbackWorker) sendSlice(slice *reflect.Value) int {
+func (w *CallbackWorker) sendSlice(slice *reflect.Value, out Outputer) {
+	ch := out.Out(slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		value := slice.Index(i)
-		w.outCh <- value.Interface()
+		ch <- value.Interface()
 	}
-	return slice.Len()
 }
 
-func (w *CallbackWorker) Close() int {
+func (w *CallbackWorker) Close(out Outputer) {
 	if w.closeCallback != nil {
 		w.closeCallback()
-		return 0
 	}
 	if w.finalItemsCallback != nil {
 		res := w.finalItemsCallback.Call(nil)
-		return w.sendSlice(&(res[0]))
+		w.sendSlice(&(res[0]), out)
 	}
-	return 0
 }
 
-func (w *CallbackWorker) Map(input stream.Object) int {
+func (w *CallbackWorker) Map(input stream.Object, out Outputer) {
 	procArg := []reflect.Value{reflect.ValueOf(input)}
 	//make([]reflect.Value, 1)
 	//procArg[0] = reflect.ValueOf(input)
 	//println(w.typename, " Type = ", procArg[0].Type().String())
 	res := w.callback.Call(procArg)
-	return w.sendSlice(&(res[0]))
+	w.sendSlice(&(res[0]), out)
 }
 
 func (w *CallbackWorker) Validate(inCh chan stream.Object, typeName string) bool {
@@ -82,9 +74,10 @@ func (w *CallbackWorker) Validate(inCh chan stream.Object, typeName string) bool
 }
 
 /* avoids Value.Call on fast path */
+
 type EfficientWorker struct {
 	outCh              chan stream.Object
-	callback           func(obj stream.Object, out chan<- stream.Object) (n int)
+	callback           func(obj stream.Object, out Outputer)
 	closeCallback      func()
 	finalItemsCallback func(out chan stream.Object) (n int)
 	typename           string
@@ -105,9 +98,8 @@ func (w *EfficientWorker) Close() int {
 	return 0
 }
 
-func (w *EfficientWorker) Map(input stream.Object) int {
-	n := w.callback(input, w.outCh)
-	return n
+func (w *EfficientWorker) Map(input stream.Object, out Outputer) {
+	w.callback(input, out)
 }
 
 func (w *EfficientWorker) Validate(inCh chan stream.Object, typeName string) bool {

@@ -17,7 +17,7 @@ type CallbackGenerator struct {
 }
 
 func (w *CallbackGenerator) GetWorker() Worker {
-	direct, ok := w.callback.(func(obj stream.Object, out chan<- stream.Object) (n int))
+	direct, ok := w.callback.(func(obj stream.Object, out Outputer))
 	if ok {
 		return &EfficientWorker{callback: direct, typename: w.typename}
 	}
@@ -39,7 +39,7 @@ func (w *WorkerFactoryGenerator) GetWorker() Worker {
 	if len(ret) != 1 {
 		log.Fatal("Cannot return more than one function in WorkerFactory")
 	}
-	direct, ok := ret[0].Elem().Interface().(func(obj stream.Object, out chan<- stream.Object) (n int))
+	direct, ok := ret[0].Elem().Interface().(func(obj stream.Object, out Outputer))
 	if ok {
 		return &EfficientWorker{callback: direct}
 	}
