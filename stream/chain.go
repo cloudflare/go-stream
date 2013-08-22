@@ -11,6 +11,10 @@ type Chain interface {
 	Add(o Operator) Chain
 	SetName(string) Chain
 
+	//NewSubChain creates a new empty chain inheriting the properties of the parent chain
+	//Usefull for distribute/fanout building functions
+	NewSubChain() Chain
+
 	//async functions
 	Start() error
 	Wait() error
@@ -28,6 +32,10 @@ type SimpleChain struct {
 }
 
 func NewChain() *SimpleChain {
+	return NewSimpleChain()
+}
+
+func NewSimpleChain() *SimpleChain {
 	return &SimpleChain{runner: NewRunner()}
 }
 
@@ -38,6 +46,10 @@ func (c *SimpleChain) Operators() []Operator {
 func (c *SimpleChain) SetName(name string) Chain {
 	c.Name = name
 	return c
+}
+
+func (c *SimpleChain) NewSubChain() Chain {
+	return NewSimpleChain()
 }
 
 func (c *SimpleChain) Add(o Operator) Chain {
@@ -135,24 +147,29 @@ func (c *OrderedChain) Add(o Operator) Chain {
 	return c
 }
 
-type InChain struct {
+func (c *OrderedChain) NewSubChain() Chain {
+	return NewOrderedChain()
+}
+
+type InChain interface {
+	Chain
+	In
+}
+
+type inChain struct {
 	Chain
 }
 
-func NewInChain() *InChain {
-	return &InChain{NewChain()}
+func NewInChainWrapper(c Chain) InChain {
+	return &inChain{c}
 }
 
-func NewOrderedInChain() *InChain {
-	return &InChain{NewOrderedChain()}
-}
-
-func (c *InChain) In() chan Object {
+func (c *inChain) In() chan Object {
 	ops := c.Operators()
 	return ops[0].(In).In()
 }
 
-func (c *InChain) SetIn(ch chan Object) {
+func (c *inChain) SetIn(ch chan Object) {
 	ops := c.Operators()
 	ops[0].(In).SetIn(ch)
 }
