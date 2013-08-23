@@ -206,11 +206,11 @@ func (t *Table) BaseTableName() string {
 }
 
 func (t *Table) ForeignTableName(serverName string) string {
-	return fmt.Sprint("%s_ft_%s", t.BaseTableName(), serverName)
+	return fmt.Sprintf("%s_ft_%s", t.BaseTableName(), serverName)
 }
 
 func (t *Table) ForeignTablesViewName() string {
-	return fmt.Sprint("%s_view", t.BaseTableName())
+	return fmt.Sprintf("%s_view", t.BaseTableName())
 }
 
 /*func (t *Table) GetPartitionTableName(start time.Time) string {
