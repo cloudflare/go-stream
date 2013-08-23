@@ -176,7 +176,7 @@ func (t *Table) CreateTableNameSql(temp bool, name string) string {
 
 func (t *Table) CreateForeignTableSql(serverName string) string {
 	name := t.ForeignTableName(serverName)
-	return fmt.Sprintf("CREATE FOREIGN TABLE IF NOT EXISTS %s (%s) SERVER %s", name, t.ColumnDefinitionsSql(), t.PrimaryKeySql(), serverName)
+	return fmt.Sprintf("CREATE FOREIGN TABLE IF NOT EXISTS %s (%s) SERVER %s", name, t.ColumnDefinitionsSql(), serverName)
 }
 
 func (t *Table) DropForeignTableSql(serverName string) string {
