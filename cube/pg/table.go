@@ -184,12 +184,14 @@ func (t *Table) DropForeignTableSql(serverName string) string {
 	return fmt.Sprintf("DROP FOREIGN TABLE IF EXISTS %s CASCADE", name)
 }
 
-func (t *Table) CreateForeignTableViewSql(serverNames []string, includeSelf bool) string {
+func (t *Table) CreateForeignTableViewSql(serverNames []string, selfServerName string) string {
 	lines := make([]string, 0, len(serverNames)+1)
 	for _, sn := range serverNames {
-		lines = append(lines, fmt.Sprintf("SELECT * FROM %s", t.ForeignTableName(sn)))
+		if selfServerName != sn {
+			lines = append(lines, fmt.Sprintf("SELECT * FROM %s", t.ForeignTableName(sn)))
+		}
 	}
-	if includeSelf {
+	if selfServerName != "" {
 		lines = append(lines, fmt.Sprintf("SELECT * FROM %s", t.BaseTableName()))
 	}
 	union := strings.Join(lines, " UNION ")

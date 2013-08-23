@@ -55,8 +55,8 @@ func (e *Executor) DropForeignTable(serverName string) {
 	e.Exec(e.table.DropForeignTableSql(serverName))
 }
 
-func (e *Executor) CreateForeignTableView(serverNames []string, includeSelf bool) {
-	e.Exec(e.table.CreateForeignTableViewSql(serverNames, includeSelf))
+func (e *Executor) CreateForeignTableView(serverNames []string, selfServerName string) {
+	e.Exec(e.table.CreateForeignTableViewSql(serverNames, selfServerName))
 }
 
 func (e *Executor) DropForeignTableView() {
