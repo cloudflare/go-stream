@@ -4,9 +4,9 @@ import (
 	"bytes"
 	//	"log"
 	//"database/sql"
-	"stash.cloudflare.com/go-stream/cube"
 	"fmt"
 	"reflect"
+	"stash.cloudflare.com/go-stream/cube"
 	"strings"
 	"time"
 )
@@ -151,10 +151,7 @@ func (t *Table) PrimaryKeySql() string {
 	return fmt.Sprintf("PRIMARY KEY(%s)", strings.Join(pkstr, ", "))
 }
 
-func (t *Table) CreateTableSql(temp bool) string {
-	return t.CreateTableNameSql(temp, t.name)
-}
-func (t *Table) CreateTableNameSql(temp bool, name string) string {
+func (t *Table) ColumnDefinitionsSql() string {
 	cstr := make([]string, 0, len(t.aggcols)+len(t.dimcols))
 	for _, col := range t.dimcols {
 		cstr = append(cstr, fmt.Sprintf("%s %s", col.Name(), col.TypeName()))
@@ -162,17 +159,58 @@ func (t *Table) CreateTableNameSql(temp bool, name string) string {
 	for _, col := range t.aggcols {
 		cstr = append(cstr, fmt.Sprintf("%s %s", col.Name(), col.TypeName()))
 	}
+	return strings.Join(cstr, ", ")
+}
 
+func (t *Table) CreateTableSql(temp bool) string {
+	return t.CreateTableNameSql(temp, t.name)
+}
+func (t *Table) CreateTableNameSql(temp bool, name string) string {
 	tempSql := " "
 	if temp {
 		tempSql = " TEMP "
 	}
 
-	return fmt.Sprintf("CREATE%sTABLE IF NOT EXISTS %s (%s, %s)", tempSql, name, strings.Join(cstr, ", "), t.PrimaryKeySql())
+	return fmt.Sprintf("CREATE%sTABLE IF NOT EXISTS %s (%s, %s)", tempSql, name, t.ColumnDefinitionsSql(), t.PrimaryKeySql())
+}
+
+func (t *Table) CreateForeignTableSql(serverName string) string {
+	name := t.ForeignTableName(serverName)
+	return fmt.Sprintf("CREATE FOREIGN TABLE IF NOT EXISTS %s (%s) SERVER %s", name, t.ColumnDefinitionsSql(), t.PrimaryKeySql(), serverName)
+}
+
+func (t *Table) DropForeignTableSql(serverName string) string {
+	name := t.ForeignTableName(serverName)
+	return fmt.Sprintf("DROP FOREIGN TABLE IF EXISTS %s CASCADE", name)
+}
+
+func (t *Table) CreateForeignTableViewSql(serverNames []string, includeSelf bool) string {
+	lines := make([]string, 0, len(serverNames)+1)
+	for _, sn := range serverNames {
+		lines = append(lines, fmt.Sprintf("SELECT * FROM %s", t.ForeignTableName(sn)))
+	}
+	if includeSelf {
+		lines = append(lines, fmt.Sprintf("SELECT * FROM %s", t.BaseTableName()))
+	}
+	union := strings.Join(lines, " UNION ")
+
+	return fmt.Sprintf("CREATE VIEW %s %s", t.ForeignTablesViewName(), union)
+}
+
+func (t *Table) DropForeignTableViewSql() string {
+	return fmt.Sprintf("DROP VIEW IF EXISTS %s", t.ForeignTablesViewName())
 }
 
 func (t *Table) BaseTableName() string {
 	return t.name
+}
+
+func (t *Table) ForeignTableName(serverName string) string {
+	return fmt.Sprint("%s_ft_%s", t.BaseTableName(), serverName)
+}
+
+func (t *Table) ForeignTablesViewName() string {
+	return fmt.Sprint("%s_view", t.BaseTableName())
 }
 
 /*func (t *Table) GetPartitionTableName(start time.Time) string {

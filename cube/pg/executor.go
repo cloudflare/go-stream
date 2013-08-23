@@ -2,10 +2,10 @@ package pg
 
 import (
 	"database/sql/driver"
-	"stash.cloudflare.com/go-stream/cube"
 	"github.com/cevian/pq"
 	"log"
 	"reflect"
+	"stash.cloudflare.com/go-stream/cube"
 )
 
 type Executor struct {
@@ -45,6 +45,22 @@ func (e *Executor) CreateBaseTable() {
 
 func (e *Executor) DropAllTables() {
 	e.Exec(e.table.DropTableSql())
+}
+
+func (e *Executor) CreateForeignTable(serverName string) {
+	e.Exec(e.table.CreateForeignTableSql(serverName))
+}
+
+func (e *Executor) DropForeignTable(serverName string) {
+	e.Exec(e.table.DropForeignTableSql(serverName))
+}
+
+func (e *Executor) CreateForeignTableView(serverNames []string, includeSelf bool) {
+	e.Exec(e.table.CreateForeignTableViewSql(serverNames, includeSelf))
+}
+
+func (e *Executor) DropForeignTableView() {
+	e.Exec(e.table.DropForeignTableViewSql())
 }
 
 func getPartition(p cube.Partition) Partition {
