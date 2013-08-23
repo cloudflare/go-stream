@@ -194,7 +194,7 @@ func (t *Table) CreateForeignTableViewSql(serverNames []string, includeSelf bool
 	}
 	union := strings.Join(lines, " UNION ")
 
-	return fmt.Sprintf("CREATE VIEW %s %s", t.ForeignTablesViewName(), union)
+	return fmt.Sprintf("CREATE VIEW %s AS %s", t.ForeignTablesViewName(), union)
 }
 
 func (t *Table) DropForeignTableViewSql() string {
