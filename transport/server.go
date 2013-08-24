@@ -175,7 +175,8 @@ func (src Server) handleConnection(conn net.Conn) {
 						sendAck(sndChData, lastGotAck)
 						lastSentAck = lastGotAck
 						timer = nil
-					} else {
+					} else if timer == nil {
+						log.Println("Setting timer", time.Now())
 						timer = time.After(100 * time.Millisecond)
 					}
 					src.Out() <- payload
@@ -195,7 +196,7 @@ func (src Server) handleConnection(conn net.Conn) {
 			if len(rcvChData) > 0 {
 				continue //drain channel before exiting
 			}
-			log.Println("Client asked for a close on recieve- should not happen")
+			log.Println("Client asked for a close on recieve- should not happen, timer is nil = ", (timer == nil), time.Now())
 			return
 		case <-sndChCloseNotifier:
 			log.Println("Server asked for a close on send - should not happen")

@@ -130,7 +130,7 @@ func (src *NextReaderSource) Run() error {
 			src.Out() <- b
 		}
 		if eofReached || (count >= src.MaxItems) {
-			//log.Println("Got eof in Next Reader Source")
+			log.Println("Got eof in Next Reader Source ", count, src.MaxItems)
 			src.readnexter.Stop()
 			return nil
 		}

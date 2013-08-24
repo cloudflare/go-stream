@@ -14,7 +14,7 @@ import (
 )
 
 const RETRIES = 3
-const ACK_TIMEOUT_MS = 1000
+const ACK_TIMEOUT_MS = 10000
 
 type Client struct {
 	*stream.HardStopChannelCloser
@@ -131,10 +131,12 @@ func (src *Client) connect() error {
 	}()
 	//receiver will be closed by the sender after it is done sending. receiver closed via a hard stop.
 
+	writeNotifier := stream.NewNonBlockingProcessedNotifier(2)
 	sndChData := make(chan stream.Object, src.hwm)
 	sndChCloseNotifier := make(chan bool)
 	defer close(sndChData)
 	sender := sink.NewMultiPartWriterSink(conn)
+	sender.CompletedNotifier = writeNotifier
 	sender.SetIn(sndChData)
 	wg_sub.Add(1)
 	go func() {
@@ -160,7 +162,7 @@ func (src *Client) connect() error {
 	closing := false
 
 	//defer log.Println("Exiting client loop")
-
+	writesNotCompleted := uint(0)
 	for {
 		upstreamCh := src.In()
 		if !src.buf.CanAdd() || closing {
@@ -185,9 +187,13 @@ func (src *Client) connect() error {
 					return err
 				}
 				sendData(sndChData, bytes, seq)
-				if timer == nil {
-					timer = src.resetAckTimer()
-				}
+				writesNotCompleted += 1
+			}
+		case cnt := <-writeNotifier.NotificationChannel():
+			writesNotCompleted -= cnt
+			if timer == nil {
+				log.Println("Seting timer", time.Now(), time.Now().UnixNano())
+				timer = src.resetAckTimer()
 			}
 		case obj, ok := <-rcvChData:
 			log.Println("in Rcv: ", ok)
@@ -208,7 +214,7 @@ func (src *Client) connect() error {
 		case <-sndChCloseNotifier:
 			return errors.New("Connection to Server was Broken in Send Direction")
 		case <-timer:
-			return errors.New(fmt.Sprintf("Time Out Waiting For Ack, %d", len(rcvChData)))
+			return errors.New(fmt.Sprintf("Time Out Waiting For Ack, %d %v %v", len(rcvChData), time.Now(), time.Now().UnixNano()))
 		case <-src.StopNotifier:
 			sender.Stop()
 			return nil

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"stash.cloudflare.com/go-stream/stream"
+	"time"
 )
 
 type valueWriter interface {
@@ -107,6 +108,7 @@ func (p lengthDelimMultiPartValueWriter) writeValue(msgs [][]byte, writer io.Wri
 			return err
 		}
 	}
+	log.Println("Write Returned", time.Now(), time.Now().UnixNano())
 	return nil
 }
 
@@ -114,11 +116,12 @@ type MultiPartWriterSink struct {
 	*stream.HardStopChannelCloser
 	*stream.BaseIn
 	multiPartValueWriter
-	writer io.Writer
+	writer            io.Writer
+	CompletedNotifier stream.ProcessedNotifier
 }
 
-func NewMultiPartWriterSink(writer io.Writer) Sinker {
-	ws := MultiPartWriterSink{stream.NewHardStopChannelCloser(), stream.NewBaseIn(stream.CHAN_SLACK), lengthDelimMultiPartValueWriter{}, writer}
+func NewMultiPartWriterSink(writer io.Writer) *MultiPartWriterSink {
+	ws := &MultiPartWriterSink{stream.NewHardStopChannelCloser(), stream.NewBaseIn(stream.CHAN_SLACK), lengthDelimMultiPartValueWriter{}, writer, nil}
 	return ws
 }
 
@@ -137,6 +140,9 @@ func (sink MultiPartWriterSink) Run() error {
 				if err := sink.writeValue(msg.([][]byte), sink.writer); err != nil {
 					log.Println("Writer got error", err)
 					return err
+				}
+				if sink.CompletedNotifier != nil {
+					sink.CompletedNotifier.Notify(1)
 				}
 			} else {
 				return nil
