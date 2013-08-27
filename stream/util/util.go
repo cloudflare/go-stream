@@ -1,7 +1,11 @@
 package util
 
-import "stash.cloudflare.com/go-stream/stream/mapper"
-import "stash.cloudflare.com/go-stream/stream"
+import (
+	"log"
+	"os"
+	"stash.cloudflare.com/go-stream/stream"
+	"stash.cloudflare.com/go-stream/stream/mapper"
+)
 
 func NewDropOp() *mapper.Op {
 	dropfn := func(input stream.Object, out mapper.Outputer) {
@@ -16,4 +20,27 @@ func NewMakeInterfaceOp() *mapper.Op {
 	}
 
 	return mapper.NewOp(fn, "MakeInterfaceOp")
+}
+
+func NewTailDataOp() stream.Operator {
+	gen := func() interface{} {
+
+		logger := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+
+		return func(input stream.Object, outputer mapper.Outputer) {
+
+			if value, ok := input.([]byte); ok {
+				logger.Printf("%s", string(value))
+			} else if value, ok := input.(string); ok {
+				logger.Printf("%s", string(value))
+			} else {
+				logger.Printf("%v", input)
+			}
+
+			outputer.Out(1) <- input
+		}
+	}
+	op := mapper.NewOpFactory(gen, "TailDataOp")
+	op.Parallel = false
+	return op
 }
