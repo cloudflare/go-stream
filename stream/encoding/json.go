@@ -30,6 +30,13 @@ func JsonGeneralDecoder() func([]byte, interface{}) {
 	return fn
 }
 
+func JsonGeneralEncoder() func(interface{}) ([]byte, error) {
+	fn := func(input interface{}) ([]byte, error) {
+		return json.Marshal(input)
+	}
+	return fn
+}
+
 func NewJsonDecodeRop(gen interface{}) stream.Operator { //if outch is chan X, gen should be func() (func([]byte, chan<-bool) []X)
 	return mapper.NewOpFactory(gen, "JsonDecodeRop")
 }
