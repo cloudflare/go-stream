@@ -1,11 +1,12 @@
 package transport
 
 import (
-	"log"
+	"logger"
 	"net"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/stream/sink"
 	"stash.cloudflare.com/go-stream/stream/source"
+	"stash.cloudflare.com/go-stream/util/slog"
 	"sync"
 	"time"
 )
@@ -54,7 +55,7 @@ func (src Server) Run() error {
 
 	ln, err := net.Listen("tcp", src.addr)
 	if err != nil {
-		log.Println("Error listening", err)
+		slog.Logf(logger.Levels.Error, "Error listening %v", err)
 		return err
 	}
 
@@ -89,7 +90,7 @@ func (src Server) Run() error {
 			default:
 			}
 			if !hardClose && !softClose {
-				log.Println("Accept Error", err)
+				slog.Logf(logger.Levels.Error, "Accept Error %v", err)
 			}
 			return nil
 		}
@@ -132,7 +133,7 @@ func (src Server) handleConnection(conn net.Conn) {
 		defer close(sndChCloseNotifier)
 		err := sender.Run()
 		if err != nil {
-			log.Println("Error in server sender", err)
+			slog.Logf(logger.Levels.Error, "Error in server sender %v", err)
 		}
 	}()
 	defer sender.Stop()
@@ -148,7 +149,7 @@ func (src Server) handleConnection(conn net.Conn) {
 		defer close(rcvChCloseNotifier)
 		err := receiver.Run()
 		if err != nil {
-			log.Println("Error in server reciever", err)
+			slog.Logf(logger.Levels.Error, "Error in server reciever %v", err)
 		}
 	}()
 	defer receiver.Stop()
@@ -163,7 +164,7 @@ func (src Server) handleConnection(conn net.Conn) {
 
 			if !ok {
 				//send last ack back??
-				log.Println("Receive Channel Closed Without Close Message")
+				slog.Logf(logger.Levels.Error, "Receive Channel Closed Without Close Message")
 				return
 			}
 			command, seq, payload, err := parseMsg(obj.([]byte))
@@ -176,7 +177,7 @@ func (src Server) handleConnection(conn net.Conn) {
 						lastSentAck = lastGotAck
 						timer = nil
 					} else if timer == nil {
-						log.Println("Setting timer", time.Now())
+						slog.Logf(logger.Levels.Debug, "Setting timer %v", time.Now())
 						timer = time.After(100 * time.Millisecond)
 					}
 					src.Out() <- payload
@@ -184,22 +185,22 @@ func (src Server) handleConnection(conn net.Conn) {
 					if lastGotAck > lastSentAck {
 						sendAck(sndChData, lastGotAck)
 					}
-					log.Println("Server got close")
+					slog.Logf(logger.Levels.Info, "%s", "Server got close")
 					return
 				} else {
-					log.Fatal("Server Got Unknown Command")
+					slog.Fatalf("%v", "Server Got Unknown Command")
 				}
 			} else {
-				log.Fatal("Server could not parse packet", err)
+				slog.Fatalf("Server could not parse packet: %v", err)
 			}
 		case <-rcvChCloseNotifier:
 			if len(rcvChData) > 0 {
 				continue //drain channel before exiting
 			}
-			log.Println("Client asked for a close on recieve- should not happen, timer is nil = ", (timer == nil), time.Now())
+			slog.Logf(logger.Levels.Error, "Client asked for a close on recieve- should not happen, timer is nil = %v, %v", (timer == nil), time.Now())
 			return
 		case <-sndChCloseNotifier:
-			log.Println("Server asked for a close on send - should not happen")
+			slog.Logf(logger.Levels.Error, "%v", "Server asked for a close on send - should not happen")
 			return
 		case <-timer:
 			sendAck(sndChData, lastGotAck)

@@ -3,12 +3,13 @@ package transport
 import (
 	"errors"
 	"fmt"
-	"log"
+	"logger"
 	"net"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/stream/sink"
 	"stash.cloudflare.com/go-stream/stream/source"
 	"stash.cloudflare.com/go-stream/util"
+	"stash.cloudflare.com/go-stream/util/slog"
 	"sync"
 	"time"
 )
@@ -39,7 +40,7 @@ func NewClient(addr string, hwm int) *Client {
 
 func (src *Client) SetNotifier(n stream.ProcessedNotifier) *Client {
 	if n.Blocking() == true {
-		log.Fatal("Can't use a blocking Notifier")
+		slog.Fatalf("Can't use a blocking Notifier")
 	}
 	src.notifier = n
 	return src
@@ -74,13 +75,13 @@ func (src *Client) Run() error {
 	for src.retries < 3 {
 		err := src.connect()
 		if err == nil {
-			log.Println("Connection failed without error")
+			slog.Logf(logger.Levels.Warn, "Connection failed without error")
 			return err
 		} else {
-			log.Println("Connection failed with error, retrying: ", err)
+			slog.Logf(logger.Levels.Error, "Connection failed with error, retrying: %s", err)
 		}
 	}
-	log.Println("Connection failed retries exceeded. Leftover: ", src.buf.Len())
+	slog.Logf(logger.Levels.Error, "Connection failed retries exceeded. Leftover: %d", src.buf.Len())
 	return nil //>>>>>>>>>>>>>>???????????????????????
 }
 
@@ -109,7 +110,7 @@ func (src *Client) connect() error {
 
 	conn, err := net.Dial("tcp", src.addr)
 	if err != nil {
-		log.Println("Cannot establish a connection with", src.addr, err)
+		slog.Logf(logger.Levels.Error, "Cannot establish a connection with %s %v", src.addr, err)
 		return err
 	}
 
@@ -126,7 +127,7 @@ func (src *Client) connect() error {
 		defer close(rcvChCloseNotifier)
 		err := receiver.Run()
 		if err != nil {
-			log.Println("Error in client reciever", err)
+			slog.Logf(logger.Levels.Error, "Error in client reciever: %v", err)
 		}
 	}()
 	//receiver will be closed by the sender after it is done sending. receiver closed via a hard stop.
@@ -145,7 +146,7 @@ func (src *Client) connect() error {
 		defer close(sndChCloseNotifier)
 		err := sender.Run()
 		if err != nil {
-			log.Println("Error in client sender: ", err)
+			slog.Logf(logger.Levels.Error, "Error in client sender: %v", err)
 		}
 	}()
 	//sender closed by closing the sndChData channel or by a hard stop
@@ -183,7 +184,7 @@ func (src *Client) connect() error {
 				bytes := msg.([]byte)
 				seq, err := src.buf.Add(bytes)
 				if err != nil {
-					log.Fatal("Error adding item to buffer", err)
+					slog.Fatalf("Error adding item to buffer %v", err)
 					return err
 				}
 				sendData(sndChData, bytes, seq)
@@ -192,21 +193,21 @@ func (src *Client) connect() error {
 		case cnt := <-writeNotifier.NotificationChannel():
 			writesNotCompleted -= cnt
 			if timer == nil {
-				log.Println("Seting timer", time.Now(), time.Now().UnixNano())
+				slog.Logf(logger.Levels.Debug, "Seting timer %v, %v", time.Now(), time.Now().UnixNano())
 				timer = src.resetAckTimer()
 			}
 		case obj, ok := <-rcvChData:
-			log.Println("in Rcv: ", ok)
+			slog.Logf(logger.Levels.Debug, "in Rcv: %v", ok)
 			command, seq, _, err := parseMsg(obj.([]byte))
 			if err != nil {
-				log.Fatal(err)
+				slog.Fatalf("%v", err)
 			}
 			if command == ACK {
 				if src.processAck(seq) {
 					timer = src.resetAckTimer()
 				}
 			} else {
-				log.Fatal("Unknown Command: ", command)
+				slog.Fatalf("Unknown Command: %v", command)
 			}
 		case <-rcvChCloseNotifier:
 			//connection threw an eof to the reader?

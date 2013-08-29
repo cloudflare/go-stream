@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	//"errors"
 	"io"
-	"log"
+	"logger"
 	"math"
 	"stash.cloudflare.com/go-stream/stream"
+	"stash.cloudflare.com/go-stream/util/slog"
 )
 
 type NextReader interface {
@@ -111,7 +112,7 @@ func (src *NextReaderSource) Run() error {
 	defer close(src.Out())
 	var count uint32
 	count = 0
-	log.Println("Reading up to ", src.MaxItems, " tuples")
+	slog.Logf(logger.Levels.Debug, "Reading up to %s %s", src.MaxItems, " tuples")
 	for {
 		b, eofReached, err := src.readnexter.ReadNext()
 		//if I've been stopped, exit no matter what I've read
@@ -122,7 +123,7 @@ func (src *NextReaderSource) Run() error {
 		default:
 		}
 		if err != nil {
-			log.Println("Reader encountered error", err)
+			slog.Logf(logger.Levels.Error, "Reader encountered error %v", err)
 			src.readnexter.Stop()
 			return err
 		} else if len(b) > 0 {
@@ -130,7 +131,7 @@ func (src *NextReaderSource) Run() error {
 			src.Out() <- b
 		}
 		if eofReached || (count >= src.MaxItems) {
-			log.Println("Got eof in Next Reader Source ", count, src.MaxItems)
+			slog.Logf(logger.Levels.Debug, "Got eof in Next Reader Source %d, %d", count, src.MaxItems)
 			src.readnexter.Stop()
 			return nil
 		}

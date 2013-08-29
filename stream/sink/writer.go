@@ -3,8 +3,9 @@ package sink
 import (
 	"encoding/binary"
 	"io"
-	"log"
+	"logger"
 	"stash.cloudflare.com/go-stream/stream"
+	"stash.cloudflare.com/go-stream/util/slog"
 	"time"
 )
 
@@ -108,7 +109,7 @@ func (p lengthDelimMultiPartValueWriter) writeValue(msgs [][]byte, writer io.Wri
 			return err
 		}
 	}
-	log.Println("Write Returned", time.Now(), time.Now().UnixNano())
+	slog.Logf(logger.Levels.Debug, "Write Returned %v, %v", time.Now(), time.Now().UnixNano())
 	return nil
 }
 
@@ -138,7 +139,7 @@ func (sink MultiPartWriterSink) Run() error {
 		case msg, ok := <-sink.In():
 			if ok {
 				if err := sink.writeValue(msg.([][]byte), sink.writer); err != nil {
-					log.Println("Writer got error", err)
+					slog.Logf(logger.Levels.Error, "Writer got error %v", err)
 					return err
 				}
 				if sink.CompletedNotifier != nil {

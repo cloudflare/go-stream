@@ -1,7 +1,8 @@
 package stream
 
 import (
-	"log"
+	"logger"
+	"stash.cloudflare.com/go-stream/util/slog"
 )
 
 type Chain interface {
@@ -55,7 +56,7 @@ func (c *SimpleChain) NewSubChain() Chain {
 func (c *SimpleChain) Add(o Operator) Chain {
 	ops := c.runner.Operators()
 	if len(ops) > 0 {
-		log.Println("Setting input channel of", Name(o))
+		slog.Logf(logger.Levels.Info, "Setting input channel of %s", Name(o))
 		last := ops[len(ops)-1]
 		lastOutCh := last.(Out).Out()
 		o.(In).SetIn(lastOutCh)
@@ -63,7 +64,7 @@ func (c *SimpleChain) Add(o Operator) Chain {
 
 	out, ok := o.(Out)
 	if ok {
-		log.Println("Setting output channel of ", Name(o))
+		slog.Logf(logger.Levels.Info, "Setting output channel of %s", Name(o))
 		ch := make(chan Object, CHAN_SLACK)
 		out.SetOut(ch)
 	}
@@ -80,7 +81,7 @@ func (c *SimpleChain) Start() error {
 func (c *SimpleChain) SoftStop() error {
 	if !c.sentstop {
 		c.sentstop = true
-		log.Println("In soft close")
+		slog.Logf(logger.Levels.Warn, "In soft close")
 		ops := c.runner.Operators()
 		ops[0].Stop()
 	}
@@ -91,26 +92,26 @@ func (c *SimpleChain) SoftStop() error {
 func (c *SimpleChain) Stop() error {
 	if !c.sentstop {
 		c.sentstop = true
-		log.Println("In hard close")
+		slog.Logf(logger.Levels.Warn, "In hard close")
 		c.runner.HardStop()
 	}
 	return nil
 }
 
 func (c *SimpleChain) Wait() error {
-	log.Println("Waiting for closenotify", c.Name)
+	slog.Logf(logger.Levels.Info, "Waiting for closenotify %s", c.Name)
 	<-c.runner.CloseNotifier()
 	select {
 	case err := <-c.runner.ErrorChannel():
-		log.Println("Hard Close in SimpleChain", c.Name, err)
+		slog.Logf(logger.Levels.Warn, "Hard Close in SimpleChain %s %v", c.Name, err)
 		c.Stop()
 	default:
-		log.Println("Soft Close in SimpleChain", c.Name)
+		slog.Logf(logger.Levels.Info, "Soft Close in SimpleChain %s", c.Name)
 		c.SoftStop()
 	}
-	log.Println("Waiting for wg")
+	slog.Logf(logger.Levels.Info, "Waiting for wg")
 	c.runner.WaitGroup().Wait()
-	log.Println("Exiting SimpleChain")
+	slog.Logf(logger.Levels.Info, "Exiting SimpleChain")
 
 	return nil
 }
@@ -137,7 +138,7 @@ func (c *OrderedChain) Add(o Operator) Chain {
 		if !parallel.IsOrdered() {
 			parallel = parallel.MakeOrdered()
 			if !parallel.IsOrdered() {
-				log.Fatal("Couldn't make parallel operator ordered")
+				slog.Fatalf("%s", "Couldn't make parallel operator ordered")
 			}
 		}
 		c.SimpleChain.Add(parallel)

@@ -1,7 +1,8 @@
 package stream
 
 import (
-	"log"
+	"logger"
+	"stash.cloudflare.com/go-stream/util/slog"
 	"sync"
 )
 
@@ -38,7 +39,7 @@ func (r *Runner) AsyncRun(op Operator) {
 		defer r.wg.Done()
 		err := op.Run()
 		if err != nil {
-			log.Println("Got an err from a child in runner:", err)
+			slog.Logf(logger.Levels.Error, "Got an err from a child in runner: %v", err)
 			select {
 			case r.errors <- err:
 			default:

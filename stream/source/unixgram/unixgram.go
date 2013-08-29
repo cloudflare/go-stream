@@ -2,12 +2,14 @@ package unixgram
 
 import (
 	"bytes"
-	"log"
+	"logger"
 	"net"
+	"stash.cloudflare.com/go-stream/stream"
+	"stash.cloudflare.com/go-stream/util/slog"
 	"syscall"
 )
 
-import "stash.cloudflare.com/go-stream/stream"
+const DefaultUnixgramSourceSocket = "/tmp/gostream.sock"
 
 type UnixgramSource struct {
 	*stream.HardStopChannelCloser
@@ -16,7 +18,7 @@ type UnixgramSource struct {
 }
 
 func DefaultUnixgramSource() *UnixgramSource {
-	return NewUnixgramSource("/tmp/gostream.sock")
+	return NewUnixgramSource(DefaultUnixgramSourceSocket)
 }
 
 func NewUnixgramSource(sockPath string) *UnixgramSource {
@@ -36,7 +38,7 @@ func (src UnixgramSource) Run() error {
 
 	socket, err := net.ListenPacket("unixgram", src.path)
 	if err != nil {
-		log.Fatal(err)
+		slog.Fatalf("Listen: %v", err)
 		return err
 	}
 
@@ -66,7 +68,7 @@ func (src UnixgramSource) Run() error {
 
 		select {
 		case <-src.StopNotifier:
-			log.Println("Closing: count ", count, "Sent:", sent)
+			slog.Logf(logger.Levels.Info, "Closing: count ", count, "Sent:", sent)
 			return nil
 		default:
 		}

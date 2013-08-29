@@ -1,9 +1,11 @@
 package mapper
 
-import "reflect"
-
-import "log"
-import "stash.cloudflare.com/go-stream/stream"
+import (
+	"logger"
+	"reflect"
+	"stash.cloudflare.com/go-stream/stream"
+	"stash.cloudflare.com/go-stream/util/slog"
+)
 
 type Worker interface {
 	Map(input stream.Object, out Outputer)
@@ -48,24 +50,24 @@ func (w *CallbackWorker) Validate(inCh chan stream.Object, typeName string) bool
 
 	calltype := w.callback.Type()
 
-	log.Println("Checking", typeName)
+	slog.Logf(logger.Levels.Info, "Checking %s", typeName)
 
 	//TODO: forbid struct results pass pointers to structs instead
 
 	if calltype.Kind() != reflect.Func {
-		log.Panicf("%s: `Processor` should be %s but got %s", typeName, reflect.Func, calltype.Kind())
+		slog.Fatalf("%s: `Processor` should be %s but got %s", typeName, reflect.Func, calltype.Kind())
 	}
 	if calltype.NumIn() != 1 {
-		log.Panicf("%s: `Processor` should have 1 parameter but it has %d parameters", typeName, calltype.NumIn())
+		slog.Fatalf("%s: `Processor` should have 1 parameter but it has %d parameters", typeName, calltype.NumIn())
 	}
 	/*if !intype.AssignableTo(calltype.In(0)) {
 		log.Panicf("%s: `Processor` should have a parameter or type %s but is %s", typeName, calltype.In(0), intype)
 	}*/
 	if calltype.NumOut() != 1 {
-		log.Panicf("%s `Processor` should return 1 value but it returns %d values", typeName, calltype.NumOut())
+		slog.Fatalf("%s `Processor` should return 1 value but it returns %d values", typeName, calltype.NumOut())
 	}
 	if calltype.Out(0).Kind() != reflect.Slice {
-		log.Panicf("%s `Processor` should return a slice but return %s", typeName, calltype.Out(0).Kind())
+		slog.Fatalf("%s `Processor` should return a slice but return %s", typeName, calltype.Out(0).Kind())
 	}
 	/*if calltype.Out(0).Elem() != outtype {
 		log.Panicf("%s `Processor` should return a slice of %s but is %s", typeName, outtype, calltype.Out(0).Elem())
@@ -103,6 +105,6 @@ func (w *EfficientWorker) Map(input stream.Object, out Outputer) {
 }
 
 func (w *EfficientWorker) Validate(inCh chan stream.Object, typeName string) bool {
-	log.Println("Checking", typeName)
+	slog.Logf(logger.Levels.Info, "Checking %s", typeName)
 	return true
 }

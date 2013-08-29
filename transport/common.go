@@ -3,11 +3,9 @@ package transport
 import (
 	"bytes"
 	"encoding/binary"
-	//	"errors"
-	"log"
+	"logger"
 	"stash.cloudflare.com/go-stream/stream"
-
-	//"time"
+	"stash.cloudflare.com/go-stream/util/slog"
 )
 
 type ZmqCommand int
@@ -25,12 +23,12 @@ func sendData(sndCh chan<- stream.Object, data []byte, seq int) {
 }
 
 func sendAck(sndCh chan<- stream.Object, seq int) {
-	log.Println("Sending back ack ", seq)
+	slog.Logf(logger.Levels.Debug, "Sending back ack %d", seq)
 	sendMsg(sndCh, ACK, seq, []byte{})
 }
 
 func sendClose(sndCh chan<- stream.Object, seq int) {
-	log.Println("Sending Close ", seq)
+	slog.Logf(logger.Levels.Debug, "Sending Close %d", seq)
 	sendMsg(sndCh, CLOSE, seq, []byte{})
 }
 
@@ -42,7 +40,7 @@ func sendMsgNoBlock(sndCh chan<- stream.Object, command ZmqCommand, seq int, pay
 	select {
 	case sndCh <- [][]byte{encodeInt(int(command)), encodeInt(seq), payload}:
 	default:
-		log.Fatal("Should be non-blocking send")
+		slog.Fatalf("%v", "Should be non-blocking send")
 	}
 }
 
@@ -50,12 +48,12 @@ func parseMsg(msg []byte) (command ZmqCommand, seq int, payload []byte, err erro
 	intsz := sizeInt()
 	commandi, err := decodeInt(msg[0:intsz])
 	if err != nil {
-		log.Fatal("Could not parse command", err)
+		slog.Fatalf("Could not parse command %v", err)
 	}
 	command = ZmqCommand(commandi)
 	seq, err = decodeInt(msg[intsz:(intsz + intsz)])
 	if err != nil {
-		log.Fatal("Could not parse seq #", err)
+		slog.Fatalf("Could not parse seq # %v", err)
 	}
 	payload = msg[2*intsz:]
 	return
@@ -68,7 +66,7 @@ func encodeInt(val int) []byte {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.LittleEndian, uint32(val))
 	if err != nil {
-		log.Fatal("Could not encode binary ", err)
+		slog.Fatalf("Could not encode binary %v", err)
 	}
 	return buf.Bytes()
 }
