@@ -1,6 +1,9 @@
 package cube
 
-import "time"
+import (
+	"stash.cloudflare.com/go-stream/cube/pg/hll"
+	"time"
+)
 
 type Dimension interface{}
 
@@ -33,4 +36,12 @@ func NewStringDimension(i string) *StringDimension {
 	ret := StringDimension(i)
 	return &ret
 
+}
+
+type HllDimension struct {
+	Hll *hll.Hll
+}
+
+func NewHllDimension(i *hll.Hll) *HllDimension {
+	return &HllDimension{Hll: i}
 }

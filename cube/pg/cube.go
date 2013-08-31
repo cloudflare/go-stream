@@ -117,6 +117,7 @@ func getAggregatePgTypeVisit(fieldValue reflect.Value, fieldDescription reflect.
 	}
 
 	var ca *cube.CountAggregate
+	var hlla *cube.HllAggregate
 	switch da := fieldValue.Type(); da {
 	default:
 		log.Fatal("Unknown Aggregate type", da, "for field", name)
@@ -129,6 +130,15 @@ func getAggregatePgTypeVisit(fieldValue reflect.Value, fieldDescription reflect.
 		}
 
 		return &CountCol{&IntCol{NewDefaultCol(name), tn}}
+	case reflect.TypeOf(hlla):
+
+		tn := "HLL"
+		tagtype := fieldDescription.Tag.Get("dbtype")
+		if tagtype != "" {
+			tn = tagtype
+		}
+
+		return &HllCol{NewDefaultCol(name), tn}
 	}
 	return nil
 
