@@ -100,6 +100,12 @@ multiset_t* hll_empty();
 
 void multiset_union(multiset_t * o_msap, multiset_t const * i_msbp);
 
+// Hash a 4 byte object
+uint64 hll_hash_4bytes(int32 key, int32 seed);
+
+// And a 8 bytes
+uint64 hll_hash_8bytes(int64 key, int32 seed);
+
 // Hash a varlena object.
 uint64 hll_hash_varlena(const char* key, int len, int seed);
 
@@ -117,3 +123,6 @@ void multiset_pack(multiset_t const * i_msp, uint8_t * o_bitp, size_t i_size);
 
 // Returns a serialized version of the hll
 uint8_t* multiset_pack_wrap(multiset_t const * i_msp, size_t i_size);
+
+// As advertized
+double multiset_card(multiset_t const * i_msp);

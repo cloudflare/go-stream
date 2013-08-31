@@ -88,6 +88,7 @@ func (hll *Hll) Print() string {
 func (hll *Hll) Serialize() []byte {
 	csz := C.multiset_packed_size(hll.ms)
 	cSer := C.multiset_pack_wrap(hll.ms, csz)
+	defer C.free(unsafe.Pointer(cSer))
 	return C.GoBytes(unsafe.Pointer(cSer), C.int(csz))
 }
 
@@ -107,4 +108,27 @@ func (hll *Hll) Add(value string) {
 	cHashKey := C.hll_hash_varlena(cValue, lVal, cSeed)
 
 	C.multiset_add(hll.ms, cHashKey)
+}
+
+func (hll *Hll) AddInt32(value int32) {
+	cValue := C.int32_t(value)
+	cSeed := C.int32_t(0)
+
+	cHashKey := C.hll_hash_4bytes(cValue, cSeed)
+
+	C.multiset_add(hll.ms, cHashKey)
+}
+
+func (hll *Hll) AddInt64(value int64) {
+	cValue := C.int64_t(value)
+	cSeed := C.int32_t(0)
+
+	cHashKey := C.hll_hash_8bytes(cValue, cSeed)
+
+	C.multiset_add(hll.ms, cHashKey)
+}
+
+func (hll *Hll) GetCardinality() float64 {
+	cCard := float64(C.multiset_card(hll.ms))
+	return cCard
 }

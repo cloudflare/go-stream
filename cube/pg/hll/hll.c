@@ -1297,6 +1297,32 @@ multiset_packed_size(multiset_t const * i_msp)
 
 /// Functions hacked up from PG form
 
+// Hash a 4 byte fixed-size object.
+uint64 hll_hash_4bytes(int32 key, int32 seed)
+{
+    uint64 out[2];
+
+    if (seed < 0)
+        ereport("negative seed values not compatible");
+
+    MurmurHash3_x64_128(&key, sizeof(key), seed, out);
+
+    return out[0];
+}
+
+// Hash a 8 byte fixed-size object.
+uint64 hll_hash_8bytes(int64 key, int32 seed)
+{
+    uint64 out[2];
+
+    if (seed < 0)
+        ereport("negative seed values not compatible");
+
+    MurmurHash3_x64_128(&key, sizeof(key), seed, out);
+
+    return out[0];
+}
+
 // Hash a varlena object.
 uint64 hll_hash_varlena(const char* key, int len, int seed)
 {
@@ -1468,4 +1494,95 @@ uint8_t* multiset_pack_wrap(multiset_t const * i_msp, size_t i_size) {
     osr = malloc(i_size);
     multiset_pack(i_msp, osr, i_size);
     return osr;
+}
+
+// Helper function
+double
+gamma_register_count_squared(int nregs)
+{
+    if (nregs <= 8)
+        ereport("number of registers too small");
+
+    switch (nregs)
+    {
+    case 16:	return 0.673 * nregs * nregs;
+    case 32:	return 0.697 * nregs * nregs;
+    case 64:	return 0.709 * nregs * nregs;
+    default:	return (0.7213 / (1.0 + 1.079 / nregs)) * nregs * nregs;
+    }
+}
+
+// Get the cardinality of a multi-set
+double
+multiset_card(multiset_t const * i_msp)
+{
+    size_t nbits = i_msp->ms_nbits;
+    size_t log2m = i_msp->ms_log2nregs;
+
+    double retval = 0.0;
+
+    uint64 max_register_value = (1ULL << nbits) - 1;
+    uint64 pw_bits = (max_register_value - 1);
+    uint64 total_bits = (pw_bits + log2m);
+    uint64 two_to_l = (1ULL << total_bits);
+
+    double large_estimator_cutoff = (double) two_to_l/30.0;
+
+    switch (i_msp->ms_type)
+    {
+    case MST_EMPTY:
+        retval = 0.0;
+        break;
+
+    case MST_EXPLICIT:
+        {
+            ms_explicit_t const * msep = &i_msp->ms_data.as_expl;
+            return msep->mse_nelem;
+        }
+        break;
+
+    case MST_COMPRESSED:
+        {
+            unsigned ii;
+            double sum;
+            int zero_count;
+            uint64_t rval;
+            double estimator;
+
+            ms_compressed_t const * mscp = &i_msp->ms_data.as_comp;
+            size_t nregs = i_msp->ms_nregs;
+
+            sum = 0.0;
+            zero_count = 0;
+
+            for (ii = 0; ii < nregs; ++ii)
+            {
+                rval = mscp->msc_regs[ii];
+                sum += 1.0 / (1L << rval);
+                if (rval == 0)
+                    ++zero_count;
+            }
+
+            estimator = gamma_register_count_squared(nregs) / sum;
+
+            if ((zero_count != 0) && (estimator < (5.0 * nregs / 2.0)))
+                retval = nregs * log((double) nregs / zero_count);
+            else if (estimator <= large_estimator_cutoff)
+                retval = estimator;
+            else
+                return (-1 * two_to_l) * log(1.0 - (estimator/two_to_l));
+        }
+        break;
+
+    case MST_UNDEFINED:
+        // Our caller will convert this to a NULL.
+        retval = -1.0;
+        break;
+
+    default:
+        ereport("undefined multiset type value #8");
+        break;
+    }
+
+    return retval;
 }

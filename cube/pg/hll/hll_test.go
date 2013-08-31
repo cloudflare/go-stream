@@ -31,6 +31,21 @@ func TestAdd(t *testing.T) {
 	ca.Add("test")
 }
 
+func TestAddInts(t *testing.T) {
+	ca, err := NewDefault()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ca.Delete()
+	ca.AddInt32(34)
+	ca.AddInt32(1)
+	ca.AddInt64(304)
+
+	if ca.GetCardinality() != 3 {
+		t.Errorf("Cardinality failed: got %f, want %f.", ca.GetCardinality(), 3.)
+	}
+}
+
 func TestUnion(t *testing.T) {
 	ca, err := NewDefault()
 	if err != nil {
