@@ -198,6 +198,10 @@ func (src *Client) connect() error {
 			}
 		case obj, ok := <-rcvChData:
 			slog.Logf(logger.Levels.Debug, "in Rcv: %v", ok)
+			if !ok {
+				return errors.New("Connection to Server was Broken in Recieve Direction")
+			}
+
 			command, seq, _, err := parseMsg(obj.([]byte))
 			if err != nil {
 				slog.Fatalf("%v", err)
