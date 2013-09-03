@@ -1298,7 +1298,7 @@ multiset_packed_size(multiset_t const * i_msp)
 /// Functions hacked up from PG form
 
 // Hash a 4 byte fixed-size object.
-uint64 hll_hash_4bytes(int32 key, int32 seed)
+uint64 hll_hash_int32(int32 key, int32 seed)
 {
     uint64 out[2];
 
@@ -1311,7 +1311,7 @@ uint64 hll_hash_4bytes(int32 key, int32 seed)
 }
 
 // Hash a 8 byte fixed-size object.
-uint64 hll_hash_8bytes(int64 key, int32 seed)
+uint64 hll_hash_int64(int64 key, int32 seed)
 {
     uint64 out[2];
 
@@ -1319,6 +1319,32 @@ uint64 hll_hash_8bytes(int64 key, int32 seed)
         ereport("negative seed values not compatible");
 
     MurmurHash3_x64_128(&key, sizeof(key), seed, out);
+
+    return out[0];
+}
+
+// Hash a 4 byte fixed-size object.
+uint64 hll_hash_4bytes(const char *key, int32 seed)
+{
+    uint64 out[2];
+
+    if (seed < 0)
+        ereport("negative seed values not compatible");
+
+    MurmurHash3_x64_128(key, 4, seed, out);
+
+    return out[0];
+}
+
+// Hash a 8 byte fixed-size object.
+uint64 hll_hash_8bytes(const char *key, int32 seed)
+{
+    uint64 out[2];
+
+    if (seed < 0)
+        ereport("negative seed values not compatible");
+
+    MurmurHash3_x64_128(key, 8, seed, out);
 
     return out[0];
 }

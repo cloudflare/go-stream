@@ -38,3 +38,18 @@ func NewHllAggregate(val string) *HllAggregate {
 	ca.Add(val)
 	return &HllAggregate{Hll: ca}
 }
+
+func NewHllAggregateFromBytes(val []byte) *HllAggregate {
+	ca, err := hll.New(hll.DEFAULT_LOG2M, hll.DEFAULT_REGWIDTH, hll.DEFAULT_EXPTHRESH, hll.DEFAULT_SPARSEON)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(val) == 4 {
+		ca.Add4Bytes(val)
+	} else if len(val) >= 8 {
+		ca.Add8Bytes(val[0:8])
+	}
+
+	return &HllAggregate{Hll: ca}
+}

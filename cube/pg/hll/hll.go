@@ -8,6 +8,7 @@ package hll
 import "C"
 
 import (
+	"fmt"
 	"unsafe"
 )
 
@@ -114,7 +115,7 @@ func (hll *Hll) AddInt32(value int32) {
 	cValue := C.int32_t(value)
 	cSeed := C.int32_t(0)
 
-	cHashKey := C.hll_hash_4bytes(cValue, cSeed)
+	cHashKey := C.hll_hash_int32(cValue, cSeed)
 
 	C.multiset_add(hll.ms, cHashKey)
 }
@@ -123,9 +124,37 @@ func (hll *Hll) AddInt64(value int64) {
 	cValue := C.int64_t(value)
 	cSeed := C.int32_t(0)
 
-	cHashKey := C.hll_hash_8bytes(cValue, cSeed)
+	cHashKey := C.hll_hash_int64(cValue, cSeed)
 
 	C.multiset_add(hll.ms, cHashKey)
+}
+
+func (hll *Hll) Add4Bytes(value []byte) error {
+	if len(value) != 4 {
+		return HllError(fmt.Sprintf("Length on input is not 4 -- %d", len(value)))
+	}
+
+	cValue := (*C.char)(unsafe.Pointer(&value[0]))
+	cSeed := C.int32_t(0)
+
+	cHashKey := C.hll_hash_4bytes(cValue, cSeed)
+	C.multiset_add(hll.ms, cHashKey)
+
+	return nil
+}
+
+func (hll *Hll) Add8Bytes(value []byte) error {
+	if len(value) != 8 {
+		return HllError(fmt.Sprintf("Length on input is not 8 -- %d", len(value)))
+	}
+
+	cValue := (*C.char)(unsafe.Pointer(&value[0]))
+	cSeed := C.int32_t(0)
+
+	cHashKey := C.hll_hash_8bytes(cValue, cSeed)
+	C.multiset_add(hll.ms, cHashKey)
+
+	return nil
 }
 
 func (hll *Hll) GetCardinality() float64 {

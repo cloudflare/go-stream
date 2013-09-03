@@ -2,6 +2,8 @@ package hll
 
 import (
 	"bytes"
+	"math"
+	"net"
 	"strings"
 	"testing"
 )
@@ -39,10 +41,32 @@ func TestAddInts(t *testing.T) {
 	defer ca.Delete()
 	ca.AddInt32(34)
 	ca.AddInt32(1)
+	ca.AddInt32(1)
 	ca.AddInt64(304)
 
 	if ca.GetCardinality() != 3 {
 		t.Errorf("Cardinality failed: got %f, want %f.", ca.GetCardinality(), 3.)
+	}
+
+	if err = ca.Add4Bytes(net.ParseIP("153.23.1.4").To4()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = ca.Add4Bytes(net.ParseIP("153.23.1.4").To4()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = ca.Add4Bytes(net.ParseIP("153.23.1.4").To4()); err != nil {
+		t.Fatal(err)
+	}
+
+	valb := net.ParseIP("::1").To16()
+	if err = ca.Add8Bytes(valb[0:8]); err != nil {
+		t.Fatal(err)
+	}
+
+	if ca.GetCardinality() != 5 {
+		t.Errorf("Cardinality failed: got %f, want %f.", ca.GetCardinality(), 5.)
 	}
 }
 
@@ -92,5 +116,28 @@ func TestSerialize(t *testing.T) {
 
 	if !bytes.Equal(ser, target) {
 		t.Errorf("Serialize failed: got %v, want %v.", ser, target)
+	}
+}
+
+func BenchmarkHashBytes(b *testing.B) {
+	ca, err := NewDefault()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer ca.Delete()
+
+	for i := 0; i < b.N; i++ {
+		if err = ca.Add4Bytes(net.ParseIP("153.23.1.4").To4()); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	for i := 0; i < b.N; i++ {
+		vv := int64(i)
+		ca.AddInt64(vv)
+	}
+
+	if math.Abs(ca.GetCardinality()-float64(b.N+1)) > float64(b.N/10) {
+		b.Errorf("Cardinality failed: got %f, want %d.", ca.GetCardinality(), b.N+1)
 	}
 }
