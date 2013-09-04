@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"logger"
 	"net"
+	"os"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/util/slog"
 	"syscall"
 )
 
 const DefaultUnixgramSourceSocket = "/tmp/gostream.sock"
+const MAX_READ_SIZE = 4092
 
 type UnixgramSource struct {
 	*stream.HardStopChannelCloser
@@ -44,14 +46,17 @@ func (src UnixgramSource) Run() error {
 
 	defer socket.Close()
 
+	// Allow other processes to write here
+	os.Chmod(src.path, 0777)
+
 	count := 0
 	sent := 0
-	buf := make([]byte, 4092)
 	lf := []byte{'\n'}
 
 	for {
 		count++
 
+		buf := make([]byte, MAX_READ_SIZE)
 		nr, _, err := socket.ReadFrom(buf)
 		if err != nil {
 			return err

@@ -97,7 +97,7 @@ func (hll *Hll) Union(hllRhs *Hll) {
 	C.multiset_union(hll.ms, hllRhs.ms)
 
 	// TODO -- always free RHS?
-	// C.free(unsafe.Pointer(hllRhs.ms))
+	C.free(unsafe.Pointer(hllRhs.ms))
 }
 
 func (hll *Hll) Add(value string) {

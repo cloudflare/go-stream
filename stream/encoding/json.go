@@ -2,9 +2,10 @@ package encoding
 
 import (
 	"encoding/json"
-	"log"
+	"logger"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/stream/mapper"
+	"stash.cloudflare.com/go-stream/util/slog"
 	//"reflect"
 )
 
@@ -24,7 +25,7 @@ func JsonGeneralDecoder() func([]byte, interface{}) {
 	fn := func(input []byte, to_populate interface{}) {
 		err := json.Unmarshal(input, to_populate)
 		if err != nil {
-			log.Printf("Error unmarshaling json: %v\n", err.Error())
+			slog.Logf(logger.Levels.Error, "Error unmarshaling json: %v %v\n", err.Error(), string(input))
 		}
 	}
 	return fn
@@ -46,7 +47,7 @@ func NewJsonEncodeRop() stream.Operator {
 		fn := func(in interface{}) [][]byte {
 			out, err := json.Marshal(in)
 			if err != nil {
-				log.Printf("Error marshaling json %v\t%+v", err, in)
+				slog.Logf(logger.Levels.Error, "Error marshaling json %v\t%+v", err, in)
 			}
 			return [][]byte{out}
 		}

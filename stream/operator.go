@@ -1,9 +1,10 @@
 // Package operator implements streaming operators
 package stream
 
-import "reflect"
-
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 // This is the default channel slack operators should use when creating output channels
 const CHAN_SLACK = 100
