@@ -1,0 +1,10 @@
+prefix=/usr/local
+includedir=${prefix}/include
+
+Cflags: -I${includedir} -I/home/ian/local/postgres/include/server -std=gnu99
+Libs:   -L/home/ian/local/postgres/lib -lm
+
+Name: GoHll                            # human-readable name
+Description: Hll binding for Go        # human-readable description
+Version: 1.0.0
+URL: https://github.com/aggregateknowledge/postgresql-hll
