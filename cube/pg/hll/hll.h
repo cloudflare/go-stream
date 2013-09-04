@@ -26,6 +26,14 @@ This is designed to allow the go code to create an HLL, add values to it, and th
 
 */
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <assert.h>
+
 // Defaults if type modifier values are not specified.
 //
 #define DEFAULT_LOG2M		11
@@ -36,10 +44,6 @@ This is designed to allow the go code to create an HLL, add values to it, and th
 // ----------------------------------------------------------------
 // Aggregating Data Structure
 // ----------------------------------------------------------------
-
-typedef int64_t        int64;
-typedef uint64_t       uint64;
-typedef int32_t        int32;
 
 typedef struct
 {
@@ -65,7 +69,7 @@ typedef struct
     size_t		ms_nbits;
     size_t		ms_nregs;
     size_t		ms_log2nregs;
-    int64		ms_expthresh;
+    int64_t		ms_expthresh;
     bool		ms_sparseon;
 
 	uint64_t	ms_type;	// size is only for alignment.
@@ -94,26 +98,26 @@ typedef struct
 
 // Create an empty multiset with parameters.
 // @TODO -- malloc's a pointer but doesn't free it. Must remember to free when done.
-multiset_t* hll_empty4(int32 log2m, int32 regwidth, int64 expthresh, int32 sparseon);
+multiset_t* hll_empty4(int32_t log2m, int32_t regwidth, int64_t expthresh, int32_t sparseon);
 
 multiset_t* hll_empty();
 
 void multiset_union(multiset_t * o_msap, multiset_t const * i_msbp);
 
 // Hash a 4 byte object
-uint64 hll_hash_4bytes(const char* key, int32 seed);
+uint64_t hll_hash_4bytes(const char* key, int32_t seed);
 
 // And a 8 bytes
-uint64 hll_hash_8bytes(const char* key, int32 seed);
+uint64_t hll_hash_8bytes(const char* key, int32_t seed);
 
 // Hash a 4 byte object (int int form)
-uint64 hll_hash_int32(int32 key, int32 seed);
+uint64_t hll_hash_int32(int32_t key, int32_t seed);
 
 // And a 8 bytes (int int form)
-uint64 hll_hash_int64(int64 key, int32 seed);
+uint64_t hll_hash_int64(int64_t key, int32_t seed);
 
 // Hash a varlena object.
-uint64 hll_hash_varlena(const char* key, int len, int seed);
+uint64_t hll_hash_varlena(const char* key, int len, int seed);
 
 // And the hashed value to the hll
 void multiset_add(multiset_t * o_msp, uint64_t element);

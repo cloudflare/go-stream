@@ -53,10 +53,10 @@ static uint8_t g_output_version = 1;
 
 #define MAX_BITVAL(nbits)	((1 << nbits) - 1)
 
-static int32 g_default_log2m = DEFAULT_LOG2M;
-static int32 g_default_regwidth = DEFAULT_REGWIDTH;
-static int64 g_default_expthresh = DEFAULT_EXPTHRESH;
-static int32 g_default_sparseon = DEFAULT_SPARSEON;
+static int32_t g_default_log2m = DEFAULT_LOG2M;
+static int32_t g_default_regwidth = DEFAULT_REGWIDTH;
+static int64_t g_default_expthresh = DEFAULT_EXPTHRESH;
+static int32_t g_default_sparseon = DEFAULT_SPARSEON;
 
 enum {
     MST_UNDEFINED	= 0x0,		// Invalid/undefined set.
@@ -74,26 +74,26 @@ static void ereport(const char* msg) {
     assert(0);
 }
 
-static int32 typmod_log2m(int32 typmod)
+static int32_t typmod_log2m(int32_t typmod)
 {
     return (typmod >> (TYPMOD_BITS - LOG2M_BITS))
         & MAX_BITVAL(LOG2M_BITS);
 }
 
-static int32 typmod_regwidth(int32 typmod)
+static int32_t typmod_regwidth(int32_t typmod)
 {
     return (typmod >> (TYPMOD_BITS - LOG2M_BITS - REGWIDTH_BITS))
         & MAX_BITVAL(REGWIDTH_BITS);
 }
 
-static int32 typmod_expthresh(int32 typmod)
+static int32_t typmod_expthresh(int32_t typmod)
 {
     return (typmod >> (TYPMOD_BITS - LOG2M_BITS -
                        REGWIDTH_BITS - EXPTHRESH_BITS))
         & MAX_BITVAL(EXPTHRESH_BITS);
 }
 
-static int32 typmod_sparseon(int32 typmod)
+static int32_t typmod_sparseon(int32_t typmod)
 {
     return (typmod >> (TYPMOD_BITS - LOG2M_BITS -
                        REGWIDTH_BITS - EXPTHRESH_BITS - SPARSEON_BITS))
@@ -104,7 +104,7 @@ static int32 typmod_sparseon(int32 typmod)
 // type modifier to save metadata bits.  This routine is used
 // when the expthresh comes from a typmod value or hll header.
 //
-static int64 decode_expthresh(int32 encoded_expthresh)
+static int64_t decode_expthresh(int32_t encoded_expthresh)
 {
     // This routine presumes the encoded value is correct and
     // doesn't range check.
@@ -117,11 +117,11 @@ static int64 decode_expthresh(int32 encoded_expthresh)
         return 1LL << (encoded_expthresh - 1);
 }
 
-static int32 integer_log2(int64 val)
+static int32_t integer_log2(int64_t val)
 {
     // Take the log2 of the expthresh.
-    int32 count = 0;
-    int64 value = val;
+    int32_t count = 0;
+    int64_t value = val;
 
     assert(val >= 0);
 
@@ -136,7 +136,7 @@ static int32 integer_log2(int64 val)
 // This routine is used to encode an expthresh value to be stored
 // in the typmod metadata or a hll header.
 //
-static int32 encode_expthresh(int64 expthresh)
+static int32_t encode_expthresh(int64_t expthresh)
 {
     // This routine presumes the uncompressed value is correct and
     // doesn't range check.
@@ -153,7 +153,7 @@ static int32 encode_expthresh(int64 expthresh)
 // the expthresh to use from nbits and nregs.
 //
 static size_t
-expthresh_value(int64 expthresh, size_t nbits, size_t nregs)
+expthresh_value(int64_t expthresh, size_t nbits, size_t nregs)
 {
     if (expthresh != -1)
     {
@@ -528,7 +528,7 @@ multiset_tostring(multiset_t const * i_msp)
     size_t used;
     size_t nbits = i_msp->ms_nbits;
     size_t nregs = i_msp->ms_nregs;
-    int64 expthresh = i_msp->ms_expthresh;
+    int64_t expthresh = i_msp->ms_expthresh;
     size_t sparseon = i_msp->ms_sparseon;
 
     size_t expval = expthresh_value(expthresh, nbits, nregs);
@@ -1034,7 +1034,7 @@ pack_header(uint8_t * o_bitp,
             uint8_t type,
             size_t nbits,
             size_t log2nregs,
-            int64 expthresh,
+            int64_t expthresh,
             size_t sparseon)
 {
     size_t ndx = 0;
@@ -1053,7 +1053,7 @@ multiset_pack(multiset_t const * i_msp, uint8_t * o_bitp, size_t i_size)
 
     size_t nbits = i_msp->ms_nbits;
     size_t log2nregs = i_msp->ms_log2nregs;
-    int64 expthresh = i_msp->ms_expthresh;
+    int64_t expthresh = i_msp->ms_expthresh;
     size_t sparseon = i_msp->ms_sparseon;
 
     switch (i_msp->ms_type)
@@ -1298,9 +1298,9 @@ multiset_packed_size(multiset_t const * i_msp)
 /// Functions hacked up from PG form
 
 // Hash a 4 byte fixed-size object.
-uint64 hll_hash_int32(int32 key, int32 seed)
+uint64_t hll_hash_int32(int32_t key, int32_t seed)
 {
-    uint64 out[2];
+    uint64_t out[2];
 
     if (seed < 0)
         ereport("negative seed values not compatible");
@@ -1311,9 +1311,9 @@ uint64 hll_hash_int32(int32 key, int32 seed)
 }
 
 // Hash a 8 byte fixed-size object.
-uint64 hll_hash_int64(int64 key, int32 seed)
+uint64_t hll_hash_int64(int64_t key, int32_t seed)
 {
-    uint64 out[2];
+    uint64_t out[2];
 
     if (seed < 0)
         ereport("negative seed values not compatible");
@@ -1324,9 +1324,9 @@ uint64 hll_hash_int64(int64 key, int32 seed)
 }
 
 // Hash a 4 byte fixed-size object.
-uint64 hll_hash_4bytes(const char *key, int32 seed)
+uint64_t hll_hash_4bytes(const char *key, int32_t seed)
 {
-    uint64 out[2];
+    uint64_t out[2];
 
     if (seed < 0)
         ereport("negative seed values not compatible");
@@ -1337,9 +1337,9 @@ uint64 hll_hash_4bytes(const char *key, int32 seed)
 }
 
 // Hash a 8 byte fixed-size object.
-uint64 hll_hash_8bytes(const char *key, int32 seed)
+uint64_t hll_hash_8bytes(const char *key, int32_t seed)
 {
-    uint64 out[2];
+    uint64_t out[2];
 
     if (seed < 0)
         ereport("negative seed values not compatible");
@@ -1350,10 +1350,10 @@ uint64 hll_hash_8bytes(const char *key, int32 seed)
 }
 
 // Hash a varlena object.
-uint64 hll_hash_varlena(const char* key, int len, int seed)
+uint64_t hll_hash_varlena(const char* key, int len, int seed)
 {
 
-    uint64 out[2];
+    uint64_t out[2];
 
     if (seed < 0)
         ereport("negative seed values not compatible");
@@ -1364,7 +1364,7 @@ uint64 hll_hash_varlena(const char* key, int len, int seed)
 }
 
 static void
-check_modifiers(int32 log2m, int32 regwidth, int64 expthresh, int32 sparseon)
+check_modifiers(int32_t log2m, int32_t regwidth, int64_t expthresh, int32_t sparseon)
 {
     // Range check each of the modifiers.
     if (log2m < 0 || log2m > MAX_BITVAL(LOG2M_BITS))
@@ -1386,7 +1386,7 @@ check_modifiers(int32 log2m, int32 regwidth, int64 expthresh, int32 sparseon)
 // Create an empty multiset with parameters.
 // @TODO -- malloc's a pointer but doesn't free it. Must remember to free when done.
 multiset_t*
-hll_empty4(int32 log2m, int32 regwidth, int64 expthresh, int32 sparseon)
+hll_empty4(int32_t log2m, int32_t regwidth, int64_t expthresh, int32_t sparseon)
 {
 
     multiset_t* o_msap; 
@@ -1547,10 +1547,10 @@ multiset_card(multiset_t const * i_msp)
 
     double retval = 0.0;
 
-    uint64 max_register_value = (1ULL << nbits) - 1;
-    uint64 pw_bits = (max_register_value - 1);
-    uint64 total_bits = (pw_bits + log2m);
-    uint64 two_to_l = (1ULL << total_bits);
+    uint64_t max_register_value = (1ULL << nbits) - 1;
+    uint64_t pw_bits = (max_register_value - 1);
+    uint64_t total_bits = (pw_bits + log2m);
+    uint64_t two_to_l = (1ULL << total_bits);
 
     double large_estimator_cutoff = (double) two_to_l/30.0;
 

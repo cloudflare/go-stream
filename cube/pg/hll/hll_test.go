@@ -81,7 +81,8 @@ func TestUnion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer cb.Delete()
+	// After a Union call, this is automatically deleted.
+	//defer cb.Delete()
 
 	ca.Add("test1")
 	ca.Add("test2")

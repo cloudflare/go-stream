@@ -94,13 +94,12 @@ func (c *HllCol) TypeName() string {
 
 // This guy is how the value is supposed to be printed out (for a COPY command to PG).
 func (c *HllCol) PrintInterface(in interface{}) interface{} {
-	if td, ok := in.(cube.HllDimension); ok {
-		defer td.Hll.Delete()
-		return td.Hll.Serialize()
-	} else if td, ok := in.(cube.HllAggregate); ok {
+	if td, ok := in.(cube.HllAggregate); ok {
 		defer td.Hll.Delete()
 		return "\\\\x" + hex.EncodeToString(td.Hll.Serialize())
-		//return "\\\\x128b7f812f937bf31b28deb140723d20b30825c72b4ba34c5f8b21df195eda1267d3760d12a784208237852f08dda87c53c4e74dc5dad7b406384f"
+	} else if td, ok := in.(cube.HllDimension); ok {
+		defer td.Hll.Delete()
+		return "\\\\x" + hex.EncodeToString(td.Hll.Serialize())
 	}
 	return 0
 }

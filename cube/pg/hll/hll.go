@@ -2,7 +2,6 @@ package hll
 
 /*
 #cgo pkg-config: hll
-#include <postgres.h>
 #include "hll.h"
 */
 import "C"
@@ -95,9 +94,7 @@ func (hll *Hll) Serialize() []byte {
 
 func (hll *Hll) Union(hllRhs *Hll) {
 	C.multiset_union(hll.ms, hllRhs.ms)
-
-	// TODO -- always free RHS?
-	C.free(unsafe.Pointer(hllRhs.ms))
+	C.free(unsafe.Pointer(hllRhs.ms)) // Free the RHS
 }
 
 func (hll *Hll) Add(value string) {

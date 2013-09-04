@@ -1,8 +1,8 @@
 prefix=/usr/local
 includedir=${prefix}/include
 
-Cflags: -I${includedir} -I/home/ian/local/postgres/include/server -std=gnu99
-Libs:   -L/home/ian/local/postgres/lib -lm
+Cflags: -I${includedir} -std=gnu99
+Libs:   -lm
 
 Name: GoHll                            # human-readable name
 Description: Hll binding for Go        # human-readable description
