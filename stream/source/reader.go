@@ -112,7 +112,7 @@ func (src *NextReaderSource) Run() error {
 	defer close(src.Out())
 	var count uint32
 	count = 0
-	slog.Logf(logger.Levels.Debug, "Reading up to %s %s", src.MaxItems, " tuples")
+	slog.Logf(logger.Levels.Debug, "Reading up to %d %s", src.MaxItems, " tuples")
 	for {
 		b, eofReached, err := src.readnexter.ReadNext()
 		//if I've been stopped, exit no matter what I've read
