@@ -2,7 +2,8 @@ package stream
 
 import (
 	"errors"
-	"log"
+	"logger"
+	"stash.cloudflare.com/go-stream/util/slog"
 )
 
 type DistributorChildOp interface {
@@ -52,7 +53,7 @@ func (op *DistributeOperator) Run() error {
 					op.createBranch(key)
 					ch, ok = op.outputs[key]
 					if !ok {
-						log.Fatal("couldn't find channel right after key create")
+						slog.Fatalf("couldn't find channel right after key create")
 					}
 
 				}
@@ -64,7 +65,7 @@ func (op *DistributeOperator) Run() error {
 			op.runner.HardStop()
 			return nil
 		case <-op.runner.CloseNotifier():
-			log.Println("Unexpected child close in distribute op")
+			slog.Logf(logger.Levels.Error, "Unexpected child close in distribute op")
 			op.runner.HardStop()
 			return errors.New("Unexpected distribute child close")
 		}

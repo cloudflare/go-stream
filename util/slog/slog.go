@@ -7,10 +7,9 @@ import (
 	"strings"
 )
 
-const LogPrefixCLI = "[CLI] "
-
 var (
-	glog *logger.Logger // the main logger object
+	LogPrefix string
+	glog      *logger.Logger // the main logger object
 )
 
 // fatal: outputs a fatal startup error to STDERR, logs it to the
@@ -25,17 +24,19 @@ func exit(code int, l *logger.Logger, format string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", v...)
 
 	if l != nil {
-		l.Printf(logger.Levels.Error, LogPrefixCLI, format, v...)
+		l.Printf(logger.Levels.Error, LogPrefix, format, v...)
 	}
 
 	os.Exit(code)
 }
 
-func Init(logName *string, logLevel *string) {
+func Init(logName *string, logLevel *string, logPrefix *string) {
 	// Change logger level
 	if err := logger.SetLogName(*logName); err != nil {
 		fatal(nil, "Cannot set log name for program")
 	}
+
+	LogPrefix = "[" + *logPrefix + "] "
 
 	if ll, ok := logger.CfgLevels[strings.ToLower(*logLevel)]; !ok {
 		fatal(nil, "Unsupported log level: "+*logLevel)
@@ -48,7 +49,7 @@ func Init(logName *string, logLevel *string) {
 
 func Logf(level logger.Level, format string, v ...interface{}) {
 	if glog != nil {
-		glog.Printf(level, LogPrefixCLI, format, v...)
+		glog.Printf(level, LogPrefix, format, v...)
 	}
 }
 
