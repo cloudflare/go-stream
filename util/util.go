@@ -1,8 +1,9 @@
 package util
 
-import "log"
-
-var _ = log.Printf
+import (
+	metrics "github.com/rcrowley/go-metrics"
+	"time"
+)
 
 type MemoryBuffer struct {
 	buf     [][]byte
@@ -164,4 +165,22 @@ func (buf *SequentialBufferChanImpl) Reset() [][]byte {
 	buf.lastack = 0
 	buf.seq = len(buf.chanbuf) + 1
 	return ret
+}
+
+type StreamingMetrics struct {
+	Reg       metrics.Registry
+	Total     metrics.Counter // total count of packets.
+	Current   metrics.Counter // packets in the last period
+	Error     metrics.Counter // total count of packets that are dropped
+	StartTime int64           // How long we've been running for
+}
+
+func NewStreamingMetrics(mReg metrics.Registry) *StreamingMetrics {
+	return &StreamingMetrics{
+		Reg:       mReg,
+		Total:     metrics.NewCounter(),
+		Current:   metrics.NewCounter(),
+		Error:     metrics.NewCounter(),
+		StartTime: time.Now().Unix(),
+	}
 }
