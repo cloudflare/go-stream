@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-const RETRIES = 3
 const ACK_TIMEOUT_MS = 10000
+const RETRY_MAX = 100
 
 type Client struct {
 	*stream.HardStopChannelCloser
@@ -81,13 +81,14 @@ func (src *Client) Run() error {
 		}
 	}(stream.Name(src), src)
 
-	for src.retries < 3 {
+	for src.retries < RETRY_MAX {
 		err := src.connect()
 		if err == nil {
 			slog.Logf(logger.Levels.Warn, "Connection failed without error")
 			return err
 		} else {
 			slog.Logf(logger.Levels.Error, "Connection failed with error, retrying: %s", err)
+			time.Sleep(1 * time.Second)
 		}
 	}
 	slog.Logf(logger.Levels.Error, "Connection failed retries exceeded. Leftover: %d", src.buf.Len())
