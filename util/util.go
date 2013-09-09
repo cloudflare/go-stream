@@ -167,20 +167,38 @@ func (buf *SequentialBufferChanImpl) Reset() [][]byte {
 	return ret
 }
 
+type MetricsGroup struct {
+	Events      metrics.Counter
+	Errors      metrics.Counter
+	QueueLength metrics.Gauge
+}
+
 type StreamingMetrics struct {
 	Reg       metrics.Registry
-	Total     metrics.Counter // total count of packets.
-	Current   metrics.Counter // packets in the last period
-	Error     metrics.Counter // total count of packets that are dropped
-	StartTime int64           // How long we've been running for
+	OpGroups  map[string]MetricsGroup // Each Op can have an associated metrics group
+	StartTime int64                   // How long we've been running for
+}
+
+func (m *StreamingMetrics) Event(op *string) {
+	m.OpGroups[*op].Events.Inc(1)
+}
+
+func (m *StreamingMetrics) Error(op *string) {
+	m.OpGroups[*op].Errors.Inc(1)
+}
+
+func (m *StreamingMetrics) Update(op *string, v int) {
+	m.OpGroups[*op].QueueLength.Update(int64(v))
+}
+
+func (m *StreamingMetrics) Register(op string) {
+	m.OpGroups[op] = MetricsGroup{metrics.NewCounter(), metrics.NewCounter(), metrics.NewGauge()}
 }
 
 func NewStreamingMetrics(mReg metrics.Registry) *StreamingMetrics {
 	return &StreamingMetrics{
 		Reg:       mReg,
-		Total:     metrics.NewCounter(),
-		Current:   metrics.NewCounter(),
-		Error:     metrics.NewCounter(),
+		OpGroups:  make(map[string]MetricsGroup),
 		StartTime: time.Now().Unix(),
 	}
 }

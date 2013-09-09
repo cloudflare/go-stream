@@ -21,6 +21,10 @@ func (o *BaseIn) In() chan Object {
 	return o.in
 }
 
+func (o *BaseIn) GetInDepth() int {
+	return len(o.in)
+}
+
 func (o *BaseIn) SetIn(c chan Object) {
 	o.in = c
 }

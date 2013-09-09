@@ -42,6 +42,7 @@ type Out interface {
 type In interface {
 	In() chan Object
 	SetIn(c chan Object)
+	GetInDepth() int
 }
 
 type InOutOperator interface {

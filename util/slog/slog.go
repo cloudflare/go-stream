@@ -66,10 +66,9 @@ func Fatalf(format string, v ...interface{}) {
 }
 
 type statsPkg struct {
-	Name        string
-	TotalMsgs   int64
-	TotalErrors int64
-	UpTime      int64
+	Name      string
+	UpTime    int64
+	OpMetrics map[string]interface{}
 }
 
 func statsSender(metricsAddr *string, processName *string) {
@@ -95,7 +94,10 @@ func statsSender(metricsAddr *string, processName *string) {
 			Logf(logger.Levels.Error, "%v", err.Error())
 		} else {
 			timestamp := time.Now().Unix() - Gm.StartTime
-			dBag := statsPkg{*processName, Gm.Total.Count(), Gm.Error.Count(), timestamp}
+			dBag := statsPkg{*processName, timestamp, map[string]interface{}{}}
+			for k, v := range Gm.OpGroups {
+				dBag.OpMetrics[k] = map[string]int64{"Events": v.Events.Count(), "Errors": v.Errors.Count(), "Queue": v.QueueLength.Value()}
+			}
 			stats, err := json.Marshal(dBag)
 			if err == nil {
 				_, err = rep.SendBytes(stats, zmq.DONTWAIT)

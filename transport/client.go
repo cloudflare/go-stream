@@ -72,6 +72,15 @@ func (src *Client) Run() error {
 	defer func() {
 		src.running = false
 	}()
+
+	slog.Gm.Register(stream.Name(src))
+	go func(op string, s *Client) { // Update the queue depth on input for each phase
+		for {
+			slog.Gm.Update(&op, s.GetInDepth())
+			time.Sleep(1 * time.Second)
+		}
+	}(stream.Name(src), src)
+
 	for src.retries < 3 {
 		err := src.connect()
 		if err == nil {
@@ -163,6 +172,7 @@ func (src *Client) connect() error {
 	closing := false
 
 	//defer log.Println("Exiting client loop")
+	opName := stream.Name(src)
 	writesNotCompleted := uint(0)
 	for {
 		upstreamCh := src.In()
@@ -189,6 +199,7 @@ func (src *Client) connect() error {
 				}
 				sendData(sndChData, bytes, seq)
 				writesNotCompleted += 1
+				slog.Gm.Event(&opName) // These are bactched
 			}
 		case cnt := <-writeNotifier.NotificationChannel():
 			writesNotCompleted -= cnt

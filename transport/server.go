@@ -73,6 +73,7 @@ func (src Server) Run() error {
 		hardCloseListener(src.StopNotifier, scl, ln)
 	}()
 
+	slog.Gm.Register(stream.Name(src))
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -121,6 +122,7 @@ func (src Server) handleConnection(conn net.Conn) {
 	wg_sub := &sync.WaitGroup{}
 	defer wg_sub.Wait()
 
+	opName := stream.Name(src)
 	sndChData := make(chan stream.Object, 100)
 	sndChCloseNotifier := make(chan bool, 1)
 	defer close(sndChData)
@@ -168,6 +170,7 @@ func (src Server) handleConnection(conn net.Conn) {
 				return
 			}
 			command, seq, payload, err := parseMsg(obj.([]byte))
+			slog.Gm.Event(&opName)
 
 			if err == nil {
 				if command == DATA {

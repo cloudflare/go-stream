@@ -5,6 +5,7 @@ import "time"
 /* There should be a separate manager for each service */
 type Manager interface {
 	GetEra(t time.Time) Era
+	GetCurrentEra() Era
 }
 
 type StaticManager struct {
@@ -12,6 +13,10 @@ type StaticManager struct {
 }
 
 func (c *StaticManager) GetEra(t time.Time) Era {
+	return c.E
+}
+
+func (c *StaticManager) GetCurrentEra() Era {
 	return c.E
 }
 

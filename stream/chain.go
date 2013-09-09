@@ -170,6 +170,11 @@ func (c *inChain) In() chan Object {
 	return ops[0].(In).In()
 }
 
+func (c *inChain) GetInDepth() int {
+	ops := c.Operators()
+	return ops[0].(In).GetInDepth()
+}
+
 func (c *inChain) SetIn(ch chan Object) {
 	ops := c.Operators()
 	ops[0].(In).SetIn(ch)
