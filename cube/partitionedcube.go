@@ -173,9 +173,11 @@ func (c *TimePartitionedCube) FlushItems() *TimePartitionedCube {
 	flush := NewTimePartitionedCube(c.dur)
 
 	for tp, cube := range c.cubes {
-		if tp.(TimePartition).t.Unix() < c.flushCuttoffTime.Unix() {
-			flush.AddPartition(tp, cube)
-			delete(c.cubes, tp)
+		if tpc, ok := tp.(TimePartition); ok {
+			if tpc.t.Unix() < c.flushCuttoffTime.Unix() {
+				flush.AddPartition(tp, cube)
+				delete(c.cubes, tp)
+			}
 		}
 	}
 	c.flushCuttoffTime = c.flushCuttoffTime.Add(time.Second)

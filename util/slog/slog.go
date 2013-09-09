@@ -17,6 +17,13 @@ var (
 	Gm        *util.StreamingMetrics // Main metrics object
 )
 
+const (
+	DEFAULT_STATS_LOG_NAME   = "test"
+	DEFAULT_STATS_LOG_LEVEL  = "debug"
+	DEFAULT_STATS_LOG_PREFIX = "test"
+	DEFAULT_STATS_ADDR       = "tcp://127.0.0.1:5450"
+)
+
 // fatal: outputs a fatal startup error to STDERR, logs it to the
 // logger if available and terminates the program
 func fatal(l *logger.Logger, format string, v ...interface{}) {
@@ -35,16 +42,16 @@ func exit(code int, l *logger.Logger, format string, v ...interface{}) {
 	os.Exit(code)
 }
 
-func Init(logName *string, logLevel *string, logPrefix *string, metrics *util.StreamingMetrics, metricsAddr *string) {
+func Init(logName string, logLevel string, logPrefix string, metrics *util.StreamingMetrics, metricsAddr string) {
 	// Change logger level
-	if err := logger.SetLogName(*logName); err != nil {
+	if err := logger.SetLogName(logName); err != nil {
 		fatal(nil, "Cannot set log name for program")
 	}
 
-	LogPrefix = "[" + *logPrefix + "] "
+	LogPrefix = "[" + logPrefix + "] "
 
-	if ll, ok := logger.CfgLevels[strings.ToLower(*logLevel)]; !ok {
-		fatal(nil, "Unsupported log level: "+*logLevel)
+	if ll, ok := logger.CfgLevels[strings.ToLower(logLevel)]; !ok {
+		fatal(nil, "Unsupported log level: "+logLevel)
 	} else {
 		if glog = logger.New(ll); glog == nil {
 			fatal(nil, "Cannot start logger")
@@ -52,7 +59,7 @@ func Init(logName *string, logLevel *string, logPrefix *string, metrics *util.St
 	}
 
 	Gm = metrics
-	go statsSender(metricsAddr, logPrefix)
+	go statsSender(&metricsAddr, &logPrefix)
 }
 
 func Logf(level logger.Level, format string, v ...interface{}) {
