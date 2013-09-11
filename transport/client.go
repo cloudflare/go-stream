@@ -200,7 +200,8 @@ func (src *Client) connect() error {
 				}
 				sendData(sndChData, bytes, seq)
 				writesNotCompleted += 1
-				slog.Gm.Event(&opName) // These are bactched
+				slog.Gm.Event(&opName) // These are batched
+				//slog.Logf(logger.Levels.Debug, "Sent batch -- length %d seq %d", len(bytes), seq)
 			}
 		case cnt := <-writeNotifier.NotificationChannel():
 			writesNotCompleted -= cnt

@@ -50,18 +50,19 @@ func (s *WeightedEra) GetNode(posit int) *WeightedNode {
 }
 
 func (s *WeightedEra) NormalizeAndPopulateMap() {
-	total := uint32(0)
-	scalar := uint32(1)
+	total := float32(0)
+	scalar := float32(1)
 	for _, n := range s.nodes {
 		wn := n.(*WeightedNode)
-		total += wn.weight
+		total += float32(wn.weight)
 	}
 
 	if total == 0 {
-		slog.Logf(logger.Levels.Error, "Total Node Wieght 0")
+		slog.Logf(logger.Levels.Error, "Total Node Weight 0")
 		return
 	}
 
+	slog.Logf(logger.Levels.Debug, "Total Node Weight %f", total)
 	if total < MAX_WEIGHT {
 		// Scale weights up
 		scalar = MAX_WEIGHT / total
@@ -71,7 +72,7 @@ func (s *WeightedEra) NormalizeAndPopulateMap() {
 	lastPosit := 0
 	for _, n := range s.nodes {
 		wn := n.(*WeightedNode)
-		wn.weight = ((wn.weight * scalar) / total) * MAX_WEIGHT
+		wn.weight = uint32(((float32(wn.weight) * scalar) / total) * MAX_WEIGHT)
 		slog.Logf(logger.Levels.Debug, "New Weight %d", wn.weight)
 		for i := lastPosit; uint32(i) < wn.weight && i < MAX_WEIGHT; i++ {
 			s.nodeMap[i] = wn
