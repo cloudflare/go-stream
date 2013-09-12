@@ -3,9 +3,9 @@ package pg
 import (
 	"database/sql/driver"
 	"github.com/cevian/pq"
-	"log"
 	"reflect"
 	"stash.cloudflare.com/go-stream/cube"
+	"stash.cloudflare.com/go-stream/util/slog"
 )
 
 type Executor struct {
@@ -25,7 +25,7 @@ func (e *Executor) ExecErr(sql string, args ...interface{}) (driver.Result, erro
 		var err error
 		dargs[n], err = driver.DefaultParameterConverter.ConvertValue(arg)
 		if err != nil {
-			log.Fatalf("sql: converting Exec argument #%d's type: %v", n, err)
+			slog.Fatalf("sql: converting Exec argument #%d's type: %v", n, err)
 		}
 	}
 	return exec.Exec(sql, dargs)
@@ -34,7 +34,7 @@ func (e *Executor) ExecErr(sql string, args ...interface{}) (driver.Result, erro
 func (e *Executor) Exec(sql string, args ...interface{}) driver.Result {
 	res, err := e.ExecErr(sql, args...)
 	if err != nil {
-		log.Fatal("Sql:", sql, "Err:", err)
+		slog.Fatalf("Sql: %v Err: %v", sql, err)
 	}
 	return res
 }
@@ -68,7 +68,7 @@ func getPartition(p cube.Partition) Partition {
 	case cube.TimePartition:
 		return &TimePartition{&pt}
 	default:
-		log.Fatal("Unknown Partition Type", reflect.TypeOf(pt))
+		slog.Fatalf("Unknown Partition Type %v", reflect.TypeOf(pt))
 	}
 	panic("Never Here")
 }
@@ -84,7 +84,7 @@ func (e *Executor) UpsertCube(p cube.Partition, c cube.Cuber) {
 func (e *Executor) UpsertCubes(p cube.Partition, c []cube.Cuber) {
 	tx, err := e.conn.Begin()
 	if err != nil {
-		log.Fatal("Error starting transaction", err)
+		slog.Fatalf("Error starting transaction %v", err)
 	}
 
 	part := getPartition(p)
@@ -96,26 +96,26 @@ func (e *Executor) UpsertCubes(p cube.Partition, c []cube.Cuber) {
 	cy := pq.NewCopierFromConn(e.conn)
 	err = cy.Start(e.table.CopyTableSql(part))
 	if err != nil {
-		log.Fatal("Error starting copy", err)
+		slog.Fatalf("Error starting copy %v", err)
 	}
 
 	for _, cube := range c {
 		err = cy.Send(e.table.CopyDataFull(cube))
 		if err != nil {
-			log.Fatal("Error copying ", err)
+			slog.Fatalf("Error copying %v", err)
 		}
 	}
 
 	err = cy.Close()
 	if err != nil {
-		log.Fatal("Error Ending Copy ", err)
+		slog.Fatalf("Error Ending Copy %v", err)
 	}
 
 	e.Exec(e.table.MergeCopySql(part))
 
 	err = tx.Commit()
 	if err != nil {
-		log.Fatal("Error Committing tx ", err)
+		slog.Fatalf("Error Committing tx %v ", err)
 	}
 
 }
