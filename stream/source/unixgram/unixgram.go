@@ -2,6 +2,7 @@ package unixgram
 
 import (
 	"bytes"
+	"encoding/hex"
 	"logger"
 	"net"
 	"os"
@@ -29,7 +30,28 @@ func NewUnixgramSource(sockPath string) *UnixgramSource {
 	return &unixsrc
 }
 
-func (src UnixgramSource) Run() error {
+func (src *UnixgramSource) decodeNginxLog(log []byte) int {
+	var (
+		writeIndex, readIndex int // next index to write to
+	)
+	for readIndex = 0; readIndex < len(log); readIndex++ {
+		var writeChar [1]byte // next byte value to write
+
+		writeChar[0] = log[readIndex]
+
+		if len(log)-4 > readIndex &&
+			log[readIndex] == '\\' && log[readIndex+1] == 'x' && (log[readIndex+2] == '2' || log[readIndex+2] == '5') {
+			hex.Decode(writeChar[:], log[readIndex+2:readIndex+4])
+			readIndex += 3
+		}
+
+		log[writeIndex] = writeChar[0]
+		writeIndex += 1
+	}
+	return writeIndex
+}
+
+func (src *UnixgramSource) Run() error {
 	//the socket has to run from the same goroutine because it is not thread safe
 	//memory barrier executed when goroutines moved between threads
 	//reference: https://groups.google.com/forum/#!topic/golang-nuts/eABYrBA5LEk
@@ -66,8 +88,9 @@ func (src UnixgramSource) Run() error {
 		// a separate message
 		for _, msg := range bytes.Split(buf[:nr], lf) {
 			if len(msg) > 0 {
+				wi := src.decodeNginxLog(msg)
 				sent++
-				src.Out() <- msg
+				src.Out() <- msg[:wi]
 			}
 		}
 
