@@ -12,8 +12,6 @@
 
 #include <stdint.h>
 
-#define	FORCE_INLINE __attribute__((always_inline))
-
 //-----------------------------------------------------------------------------
 
 void MurmurHash3_x64_128 ( const void * key, int len, uint32_t seed, void * out );
@@ -30,12 +28,12 @@ inline uint64_t rotl64 ( uint64_t x, int8_t r )
 
 #define BIG_CONSTANT(x) (x##LLU)
 
-FORCE_INLINE uint64_t getblock ( const uint64_t * p, int i )
+inline uint64_t getblock ( const uint64_t * p, int i )
 {
   return p[i];
 }
 
-FORCE_INLINE uint64_t fmix ( uint64_t k )
+inline uint64_t fmix ( uint64_t k )
 {
   k ^= k >> 33;
   k *= BIG_CONSTANT(0xff51afd7ed558ccd);
