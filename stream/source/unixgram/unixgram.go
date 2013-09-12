@@ -40,7 +40,7 @@ func (src *UnixgramSource) decodeNginxLog(log []byte) int {
 		writeChar[0] = log[readIndex]
 
 		if len(log)-4 > readIndex &&
-			log[readIndex] == '\\' && log[readIndex+1] == 'x' && (log[readIndex+2] == '2' || log[readIndex+2] == '5') {
+			log[readIndex] == '\\' && log[readIndex+1] == 'x' && ((log[readIndex+2] == '2' && log[readIndex+3] == '2') || (log[readIndex+2] == '5' && log[readIndex+3] == 'C')) {
 			hex.Decode(writeChar[:], log[readIndex+2:readIndex+4])
 			readIndex += 3
 		}
