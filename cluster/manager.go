@@ -6,6 +6,7 @@ import (
 	"logger"
 	"net/http"
 	"stash.cloudflare.com/go-stream/util/slog"
+	"strconv"
 	"time"
 )
 
@@ -46,8 +47,8 @@ type BBHost struct {
 	Disk_free float32
 	Load      float32
 	Name      string
-	Host      string
-	Port      string
+	Ip        string
+	Port      int
 }
 
 type BBResult struct {
@@ -76,7 +77,7 @@ func (c *DynamicBBManager) pullLatestEra() (err error) {
 
 					we := NewWeightedEra()
 					for _, node := range bbr.Nodes {
-						n := NewWeightedNode(node.Name, node.Host, node.Port, node.Disk_free, node.Load)
+						n := NewWeightedNode(node.Name, node.Ip, strconv.Itoa(node.Port), node.Disk_free, node.Load)
 						slog.Logf(logger.Levels.Debug, "Trasport LOG INFO %v", n)
 						we.Add(n)
 					}
@@ -95,8 +96,14 @@ func (c *DynamicBBManager) pullLatestEra() (err error) {
 
 					// Once we have hit one BB server with no error, no need to try any others.
 					break
+				} else {
+					slog.Logf(logger.Levels.Error, "Unmarshal Error %v", err)
 				}
+			} else {
+				slog.Logf(logger.Levels.Error, "Read Error %v", err)
 			}
+		} else {
+			slog.Logf(logger.Levels.Error, "Network GET Error %v", err)
 		}
 	}
 	return

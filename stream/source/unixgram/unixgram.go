@@ -30,6 +30,8 @@ func NewUnixgramSource(sockPath string) *UnixgramSource {
 	return &unixsrc
 }
 
+// NOTE: nginx escapes chars in 0x7F-0x1F range into \xXX format for access logs.
+// Try and de-code only these chars
 func (src *UnixgramSource) decodeNginxLog(log []byte) int {
 	var (
 		writeIndex, readIndex int // next index to write to
