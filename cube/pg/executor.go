@@ -3,6 +3,7 @@ package pg
 import (
 	"database/sql/driver"
 	"github.com/cevian/pq"
+	"logger"
 	"reflect"
 	"stash.cloudflare.com/go-stream/cube"
 	"stash.cloudflare.com/go-stream/util/slog"
@@ -34,7 +35,7 @@ func (e *Executor) ExecErr(sql string, args ...interface{}) (driver.Result, erro
 func (e *Executor) Exec(sql string, args ...interface{}) driver.Result {
 	res, err := e.ExecErr(sql, args...)
 	if err != nil {
-		slog.Fatalf("Sql: %v Err: %v", sql, err)
+		slog.Logf(logger.Levels.Error, "Sql: %v Err: %v", sql, err)
 	}
 	return res
 }
