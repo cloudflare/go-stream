@@ -42,10 +42,19 @@ func exit(code int, l *logger.Logger, format string, v ...interface{}) {
 	os.Exit(code)
 }
 
-func Init(logName string, logLevel string, logPrefix string, metrics *util.StreamingMetrics, metricsAddr string) {
+func Init(logName string, logLevel string, logPrefix string, metrics *util.StreamingMetrics, metricsAddr string,
+	logAddress string, logNetwork string) {
+
 	// Change logger level
 	if err := logger.SetLogName(logName); err != nil {
 		fatal(nil, "Cannot set log name for program")
+	}
+
+	// And set the logger to write to a custom socket.
+	if logAddress != "" && logNetwork != "" {
+		if err := logger.SetCustomSocket(logAddress, logNetwork); err != nil {
+			fatal(nil, "Cannot set custom log socket program: %s %s %v", logAddress, logNetwork, err)
+		}
 	}
 
 	LogPrefix = "[" + logPrefix + "] "
