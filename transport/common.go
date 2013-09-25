@@ -3,7 +3,7 @@ package transport
 import (
 	"bytes"
 	"encoding/binary"
-	"logger"
+	"github.com/cloudflare/golog/logger"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/util/slog"
 )

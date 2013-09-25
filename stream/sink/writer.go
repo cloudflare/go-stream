@@ -2,8 +2,8 @@ package sink
 
 import (
 	"encoding/binary"
+	"github.com/cloudflare/golog/logger"
 	"io"
-	"logger"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/util/slog"
 	"time"

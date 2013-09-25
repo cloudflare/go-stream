@@ -3,8 +3,8 @@ package slog
 import (
 	json "encoding/json"
 	"fmt"
+	"github.com/cloudflare/golog/logger"
 	zmq "github.com/pebbe/zmq3"
-	"logger"
 	"os"
 	"stash.cloudflare.com/go-stream/util"
 	"strings"

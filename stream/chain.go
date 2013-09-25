@@ -1,7 +1,7 @@
 package stream
 
 import (
-	"logger"
+	"github.com/cloudflare/golog/logger"
 	"stash.cloudflare.com/go-stream/util/slog"
 )
 

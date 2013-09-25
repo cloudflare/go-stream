@@ -2,8 +2,8 @@ package cluster
 
 import (
 	"encoding/json"
+	"github.com/cloudflare/golog/logger"
 	"io/ioutil"
-	"logger"
 	"net/http"
 	"stash.cloudflare.com/go-stream/util/slog"
 	"strconv"

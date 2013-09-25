@@ -2,7 +2,7 @@ package encoding
 
 import (
 	"encoding/json"
-	"logger"
+	"github.com/cloudflare/golog/logger"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/stream/mapper"
 	"stash.cloudflare.com/go-stream/util/slog"

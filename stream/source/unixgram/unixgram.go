@@ -3,7 +3,7 @@ package unixgram
 import (
 	"bytes"
 	"encoding/hex"
-	"logger"
+	"github.com/cloudflare/golog/logger"
 	"net"
 	"os"
 	"stash.cloudflare.com/go-stream/stream"

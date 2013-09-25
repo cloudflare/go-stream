@@ -1,7 +1,7 @@
 package mapper
 
 import (
-	"logger"
+	"github.com/cloudflare/golog/logger"
 	"reflect"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/util/slog"

@@ -3,7 +3,7 @@ package pg
 import (
 	"database/sql/driver"
 	"github.com/cevian/pq"
-	"logger"
+	"github.com/cloudflare/golog/logger"
 	"reflect"
 	"stash.cloudflare.com/go-stream/cube"
 	"stash.cloudflare.com/go-stream/util/slog"

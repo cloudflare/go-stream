@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"logger"
+	"github.com/cloudflare/golog/logger"
 	"net"
 	"stash.cloudflare.com/go-stream/stream"
 	"stash.cloudflare.com/go-stream/stream/sink"
