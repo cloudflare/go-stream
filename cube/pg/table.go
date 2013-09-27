@@ -258,6 +258,11 @@ func (t *Table) CreateTemporaryCopyTableSql(p Partition) string {
 	return fmt.Sprintf("CREATE TEMP TABLE %s (LIKE %s INCLUDING ALL) ON COMMIT DROP", t.GetTemporaryCopyTableName(p), p.GetTableName(t.BaseTableName()))
 }
 
+func (t *Table) SelectFromTableSql(where *string, limit *string, offset *string) string {
+	return fmt.Sprintf("SELECT %s FROM %s %s %s %s", t.ListColumnsSql(), t.ForeignTablesViewName(),
+		*where, *limit, *offset)
+}
+
 func (t *Table) CopyTableSql(p Partition) string {
 	return fmt.Sprintf("COPY %s FROM STDIN", t.GetTemporaryCopyTableName(p))
 }
