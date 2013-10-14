@@ -3,8 +3,8 @@ package print
 import (
 	"log"
 	"os"
-	"stash.cloudflare.com/go-stream/stream"
-	"stash.cloudflare.com/go-stream/stream/sink"
+	"github.com/cloudflare/go-stream/stream"
+	"github.com/cloudflare/go-stream/stream/sink"
 )
 
 type PrintSink struct {

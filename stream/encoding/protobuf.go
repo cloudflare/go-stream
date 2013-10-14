@@ -3,8 +3,8 @@ package encoding
 import (
 	"code.google.com/p/goprotobuf/proto"
 	"log"
-	"stash.cloudflare.com/go-stream/stream"
-	"stash.cloudflare.com/go-stream/stream/mapper"
+	"github.com/cloudflare/go-stream/stream"
+	"github.com/cloudflare/go-stream/stream/mapper"
 	//"reflect"
 )
 

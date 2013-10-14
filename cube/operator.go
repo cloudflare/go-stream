@@ -1,7 +1,7 @@
 package cube
 
 import (
-	"stash.cloudflare.com/go-stream/stream"
+	"github.com/cloudflare/go-stream/stream"
 	//	"reflect"
 	"time"
 )

@@ -6,7 +6,7 @@ import (
 	"github.com/cloudflare/golog/logger"
 	zmq "github.com/pebbe/zmq3"
 	"os"
-	"stash.cloudflare.com/go-stream/util"
+	"github.com/cloudflare/go-stream/util"
 	"strings"
 	"time"
 )

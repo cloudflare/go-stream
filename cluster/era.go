@@ -2,7 +2,7 @@ package cluster
 
 import (
 	"github.com/cloudflare/golog/logger"
-	"stash.cloudflare.com/go-stream/util/slog"
+	"github.com/cloudflare/go-stream/util/slog"
 )
 
 type Era interface {

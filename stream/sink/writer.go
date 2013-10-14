@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"github.com/cloudflare/golog/logger"
 	"io"
-	"stash.cloudflare.com/go-stream/stream"
-	"stash.cloudflare.com/go-stream/util/slog"
+	"github.com/cloudflare/go-stream/stream"
+	"github.com/cloudflare/go-stream/util/slog"
 	"time"
 )
 

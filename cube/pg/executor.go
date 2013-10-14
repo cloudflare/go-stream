@@ -5,8 +5,8 @@ import (
 	"github.com/cevian/pq"
 	"github.com/cloudflare/golog/logger"
 	"reflect"
-	"stash.cloudflare.com/go-stream/cube"
-	"stash.cloudflare.com/go-stream/util/slog"
+	"github.com/cloudflare/go-stream/cube"
+	"github.com/cloudflare/go-stream/util/slog"
 )
 
 type Executor struct {

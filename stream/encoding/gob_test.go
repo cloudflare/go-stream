@@ -6,7 +6,7 @@ import (
 )
 
 import (
-	"stash.cloudflare.com/go-stream/stream"
+	"github.com/cloudflare/go-stream/stream"
 )
 
 /*import (
@@ -17,7 +17,7 @@ import (
 
 //import "log"
 
-//import "stash.cloudflare.com/go-stream/stream/encoding"
+//import "github.com/cloudflare/go-stream/stream/encoding"
 
 func TestGob(t *testing.T) {
 

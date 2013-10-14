@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-import "stash.cloudflare.com/go-stream/stream"
+import "github.com/cloudflare/go-stream/stream"
 
 import zmqapi "github.com/pebbe/zmq3"
 

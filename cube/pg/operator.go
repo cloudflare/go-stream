@@ -1,8 +1,8 @@
 package pg
 
-import "stash.cloudflare.com/go-stream/cube"
-import "stash.cloudflare.com/go-stream/stream"
-import "stash.cloudflare.com/go-stream/stream/mapper"
+import "github.com/cloudflare/go-stream/cube"
+import "github.com/cloudflare/go-stream/stream"
+import "github.com/cloudflare/go-stream/stream/mapper"
 
 import (
 	"database/sql"

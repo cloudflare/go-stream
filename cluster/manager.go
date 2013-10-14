@@ -5,7 +5,7 @@ import (
 	"github.com/cloudflare/golog/logger"
 	"io/ioutil"
 	"net/http"
-	"stash.cloudflare.com/go-stream/util/slog"
+	"github.com/cloudflare/go-stream/util/slog"
 	"strconv"
 	"time"
 )

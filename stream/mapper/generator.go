@@ -1,7 +1,7 @@
 package mapper
 
 import "reflect"
-import "stash.cloudflare.com/go-stream/stream"
+import "github.com/cloudflare/go-stream/stream"
 import "log"
 
 //import "encoding/json"

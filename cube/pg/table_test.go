@@ -3,7 +3,7 @@ package pg
 import (
 	"database/sql"
 	"database/sql/driver"
-	"stash.cloudflare.com/go-stream/cube"
+	"github.com/cloudflare/go-stream/cube"
 	"fmt"
 	"log"
 	"time"

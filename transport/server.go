@@ -3,10 +3,10 @@ package transport
 import (
 	"github.com/cloudflare/golog/logger"
 	"net"
-	"stash.cloudflare.com/go-stream/stream"
-	"stash.cloudflare.com/go-stream/stream/sink"
-	"stash.cloudflare.com/go-stream/stream/source"
-	"stash.cloudflare.com/go-stream/util/slog"
+	"github.com/cloudflare/go-stream/stream"
+	"github.com/cloudflare/go-stream/stream/sink"
+	"github.com/cloudflare/go-stream/stream/source"
+	"github.com/cloudflare/go-stream/util/slog"
 	"sync"
 	"time"
 )

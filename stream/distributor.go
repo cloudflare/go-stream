@@ -3,7 +3,7 @@ package stream
 import (
 	"errors"
 	"github.com/cloudflare/golog/logger"
-	"stash.cloudflare.com/go-stream/util/slog"
+	"github.com/cloudflare/go-stream/util/slog"
 )
 
 type DistributorChildOp interface {

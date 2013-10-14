@@ -1,7 +1,7 @@
 package cube
 
 import (
-	"stash.cloudflare.com/go-stream/cube/pg/hll"
+	"github.com/cloudflare/go-stream/cube/pg/hll"
 )
 
 type Aggregate interface {

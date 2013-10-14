@@ -6,7 +6,7 @@ import (
 	//"database/sql"
 	"fmt"
 	"reflect"
-	"stash.cloudflare.com/go-stream/cube"
+	"github.com/cloudflare/go-stream/cube"
 	"strings"
 	"time"
 )
